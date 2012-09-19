@@ -50,7 +50,7 @@ void Compiler::download()
   FileProvider provider;
 
   QString fileName;
-  if ( provider.get( Settings::self()->wsdlUrl(), fileName ) ) {
+  if ( provider.get( Settings::self()->wsdlUrl(), fileName, Settings::self()->ignoreSslErrors() ) ) {
     QFile file( fileName );
     if ( !file.open( QIODevice::ReadOnly ) ) {
       qDebug("Unable to download file %s", Settings::self()->wsdlUrl().toEncoded().constData());
@@ -90,7 +90,7 @@ void Compiler::parse( const QDomElement &element )
 
   Definitions definitions;
   definitions.setWantedService( Settings::self()->wantedService() );
-  if ( definitions.loadXML( &context, element ) ) {
+  if ( definitions.loadXML( &context, element, Settings::self()->ignoreSslErrors() ) ) {
 
       KODE::Code::setDefaultIndentation( 4 );
 

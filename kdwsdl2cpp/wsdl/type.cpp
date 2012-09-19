@@ -54,9 +54,9 @@ XSD::Types Type::types() const
   return mTypes;
 }
 
-bool Type::loadXML( ParserContext *context, const QDomElement &element )
+bool Type::loadXML( ParserContext *context, const QDomElement &element, bool ignoreSslErrors )
 {
-  XSD::Parser parser( context, nameSpace() );
+  XSD::Parser parser( context, nameSpace(), ignoreSslErrors );
   QDomElement child = element.firstChildElement();
   while ( !child.isNull() ) {
     NSManager namespaceManager( context, child );

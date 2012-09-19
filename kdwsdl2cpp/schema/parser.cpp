@@ -56,13 +56,16 @@ public:
     QStringList mImportedSchemas;
     QStringList mIncludedSchemas;
     QStringList mNamespaces;
+
+    bool mIgnoreSslErrors;
 };
 
-Parser::Parser( ParserContext *context, const QString &nameSpace )
+Parser::Parser( ParserContext *context, const QString &nameSpace, bool ignoreSslErrors )
   : d(new Private)
 {
   d->mNameSpace = nameSpace;
   d->mDefaultQualified = false;
+  d->mIgnoreSslErrors = ignoreSslErrors;
   init(context);
 }
 
@@ -907,7 +910,7 @@ void Parser::importSchema( ParserContext *context, const QString &location )
   QString fileName;
   const QUrl schemaLocation = urlForLocation(context, location);
   qDebug("importing schema at %s", schemaLocation.toEncoded().constData());
-  if ( provider.get( schemaLocation, fileName ) ) {
+  if ( provider.get( schemaLocation, fileName, d->mIgnoreSslErrors ) ) {
     QFile file( fileName );
     if ( !file.open( QIODevice::ReadOnly ) ) {
       qDebug( "Unable to open file %s", qPrintable( file.fileName() ) );
@@ -956,7 +959,7 @@ void Parser::includeSchema( ParserContext *context, const QString &location )
   QString fileName;
   const QUrl schemaLocation = urlForLocation(context, location);
   qDebug("including schema at %s", schemaLocation.toEncoded().constData());
-  if ( provider.get( schemaLocation, fileName ) ) {
+  if ( provider.get( schemaLocation, fileName, d->mIgnoreSslErrors ) ) {
     QFile file( fileName );
     if ( !file.open( QIODevice::ReadOnly ) ) {
       qDebug( "Unable to open file %s", qPrintable( file.fileName() ) );

@@ -26,6 +26,8 @@
 
 #include <kode_export.h>
 
+class QNetworkReply;
+class QSslError;
 class QUrl;
 
 class KXMLCOMMON_EXPORT FileProvider : QObject
@@ -35,11 +37,16 @@ class KXMLCOMMON_EXPORT FileProvider : QObject
   public:
     FileProvider();
 
-    bool get( const QUrl &url, QString &target );
+    bool get( const QUrl &url, QString &target, bool ignoreSslErrors = false );
     void cleanUp();
+
+  public slots:
+    void sslErrors( QList<QSslError> sslErrors );
 
   private:
     QString mFileName;
+    bool mIgnoreSslErrors;
+    QNetworkReply *job;
 };
 
 #endif

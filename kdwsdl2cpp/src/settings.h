@@ -51,6 +51,9 @@ class Settings
     void setOutputDirectory( const QString &outputDirectory );
     QString outputDirectory() const;
 
+    void setIgnoreSslErrors(bool i);
+    bool ignoreSslErrors() const;
+
     // UNUSED
     void setNamespaceMapping( const NSMapping &namespaceMapping );
     NSMapping namespaceMapping() const;
@@ -78,6 +81,7 @@ private:
     NSMapping mNamespaceMapping;
     bool mImpl;
     bool mServer;
+    bool mIgnoreSslErrors;
 };
 
 #endif

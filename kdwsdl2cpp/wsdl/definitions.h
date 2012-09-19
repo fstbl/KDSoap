@@ -71,7 +71,7 @@ class KWSDL_EXPORT Definitions
     void setType( const Type &type );
     Type type() const;
 
-    bool loadXML( ParserContext *context, const QDomElement &element );
+    bool loadXML( ParserContext *context, const QDomElement &element, bool ignoreSslErrors = false );
     //void saveXML( ParserContext *context, QDomDocument &document ) const;
 
   private:

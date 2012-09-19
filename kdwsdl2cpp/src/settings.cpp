@@ -178,3 +178,13 @@ void Settings::setNameSpace( const QString& ns )
 {
     mNameSpace = ns;
 }
+
+void Settings::setIgnoreSslErrors(bool i)
+{
+    mIgnoreSslErrors = i;
+}
+
+bool Settings::ignoreSslErrors() const
+{
+    return mIgnoreSslErrors;
+}

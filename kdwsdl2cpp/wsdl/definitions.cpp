@@ -124,7 +124,7 @@ Type Definitions::type() const
   return mType;
 }
 
-bool Definitions::loadXML( ParserContext *context, const QDomElement &element )
+bool Definitions::loadXML( ParserContext *context, const QDomElement &element, bool ignoreSslErrors )
 {
   setTargetNamespace( element.attribute( QLatin1String("targetNamespace") ) );
   mName = element.attribute( QLatin1String("name") );
@@ -141,7 +141,7 @@ bool Definitions::loadXML( ParserContext *context, const QDomElement &element )
       qFatal("Unsupported <import> element in <definitions> - TODO");
       //mImports.append( import );
     } else if ( tagName.localName() == QLatin1String("types") ) {
-      if ( !mType.loadXML( context, child ) )
+      if ( !mType.loadXML( context, child, ignoreSslErrors ) )
           return false;
     } else if ( tagName.localName() == QLatin1String("message") ) {
       Message message( mTargetNamespace );

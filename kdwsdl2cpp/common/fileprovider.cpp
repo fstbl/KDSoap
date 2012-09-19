@@ -29,6 +29,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QSslError>
 #include <QTemporaryFile>
 
 #ifndef Q_OS_WIN
@@ -48,7 +49,7 @@ void FileProvider::cleanUp()
   }
 }
 
-bool FileProvider::get( const QUrl &url, QString &target )
+bool FileProvider::get( const QUrl &url, QString &target, bool ignoreSslErrors )
 {
   if ( !mFileName.isEmpty() ) {
     cleanUp();
@@ -71,15 +72,19 @@ bool FileProvider::get( const QUrl &url, QString &target )
     mFileName = target;
   }
 
+  mIgnoreSslErrors = ignoreSslErrors;
+
   qDebug("Downloading '%s'", url.toEncoded().constData());
 
   QNetworkAccessManager manager;
   QNetworkRequest request(url);
-  QNetworkReply* job = manager.get(request);
+  job = manager.get(request);
 
   QEventLoop loop;
   connect(job, SIGNAL(finished()),
           &loop, SLOT(quit()));
+  connect(job, SIGNAL(sslErrors(QList<QSslError>)),
+          this, SLOT(sslErrors(QList<QSslError>)));
   loop.exec();
 
   if (job->error()) {
@@ -99,6 +104,13 @@ bool FileProvider::get( const QUrl &url, QString &target )
   file.close();
 
   return true;
+}
+
+void FileProvider::sslErrors( QList<QSslError> sslErrors )
+{
+  if( mIgnoreSslErrors ) {
+    job->ignoreSslErrors();
+  }
 }
 
 #include "moc_fileprovider.cpp"
