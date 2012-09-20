@@ -92,6 +92,11 @@ Message::List Definitions::messages() const
   return mMessages;
 }
 
+KWSDL::Policy::List Definitions::policies() const
+{
+	return mPolicies;
+}
+
 void Definitions::setPortTypes( const PortType::List &portTypes )
 {
   mPortTypes = portTypes;
@@ -167,6 +172,10 @@ bool Definitions::loadXML( ParserContext *context, const QDomElement &element, b
       }
     } else if ( tagName.localName() == QLatin1String("documentation") ) {
       // ignore documentation for now
+    } else if ( tagName.localName() == QLatin1String("Policy") ) {
+      Policy policy ( mTargetNamespace );
+      policy.loadXML( context, child );
+      mPolicies.append( policy );
     } else {
       context->messageHandler()->warning( QString::fromLatin1( "Definitions: unknown tag %1" ).arg( child.tagName() ) );
     }

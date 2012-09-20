@@ -29,6 +29,7 @@
 #include <wsdl/binding.h>
 #include <wsdl/import.h>
 #include <wsdl/message.h>
+#include <wsdl/policy.h>
 #include <wsdl/porttype.h>
 #include <wsdl/service.h>
 #include <wsdl/type.h>
@@ -62,6 +63,8 @@ class KWSDL_EXPORT Definitions
     void setMessages( const Message::List &messages );
     Message::List messages() const;
 
+    Policy::List policies() const;
+
     void setPortTypes( const PortType::List &portTypes );
     PortType::List portTypes() const;
 
@@ -78,6 +81,7 @@ class KWSDL_EXPORT Definitions
     Binding::List mBindings;
     //Import::List mImports;
     Message::List mMessages;
+    Policy::List mPolicies;
     PortType::List mPortTypes;
     Service::List mServices;
     Type mType;

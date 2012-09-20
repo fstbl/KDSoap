@@ -44,6 +44,7 @@ set(SOURCES
 	wsdl/operation.cpp
 	wsdl/param.cpp
 	wsdl/part.cpp
+	wsdl/policy.cpp
 	wsdl/port.cpp
 	wsdl/porttype.cpp
 	wsdl/service.cpp

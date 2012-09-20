@@ -59,6 +59,9 @@ class Converter
     void createSimpleTypeSerializer( KODE::Class&, const XSD::SimpleType*, const XSD::SimpleType::List& simpleTypeList );
 
     // Client Stub
+    void generateToHeader(KODE::Code& code);
+    void generateActionHeader(KODE::Code& code, const QString& operationName);
+    void generateSecurityHeader(KODE::Code& code);
     bool convertClientService();
     bool convertClientCall( const Operation&, const Binding&, KODE::Class& );
     void convertClientInputMessage( const Operation&, const Binding&, KODE::Class& );

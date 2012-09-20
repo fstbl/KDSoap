@@ -62,6 +62,56 @@ static SoapBinding::Headers getOutputHeaders( const Binding& binding, const QStr
     return SoapBinding::Headers();
 }
 
+void Converter::generateToHeader(KODE::Code& code)
+{
+    code += "KDSoapMessage toHeader;";
+    code += "toHeader.setUse(KDSoapMessage::LiteralUse);";
+    code += "KDSoapValue toValue(QString::fromLatin1(\"To\"), QVariant(d_ptr->m_endPoint), QString::fromLatin1(\"wsa5\"));";
+    code += "toValue.setQualified(true);";
+    code += "toValue.setNamespaceUri(QString::fromLatin1(\"http://www.w3.org/2005/08/addressing\"));";
+    code += "toHeader.childValues().append(toValue);";
+    code += "clientInterface()->setHeader(QString::fromLatin1(\"to\"), toHeader);";
+}
+
+void Converter::generateActionHeader(KODE::Code& code, const QString& operationName)
+{
+	code += "KDSoapMessage actionHeader;";
+	code += "actionHeader.setUse(KDSoapMessage::LiteralUse);";
+	code += "KDSoapValue actionValue(QString::fromLatin1(\"Action\"), QVariant(QString::fromLatin1(\""+operationName+"\")), QString::fromLatin1(\"wsa5\"));";
+	code += "actionValue.setQualified(true);";
+	code += "actionValue.setNamespaceUri(QString::fromLatin1(\"http://www.w3.org/2005/08/addressing\"));";
+	code += "actionHeader.childValues().append(actionValue);";
+	code += "clientInterface()->setHeader(QString::fromLatin1(\"action\"), actionHeader);";
+}
+
+void Converter::generateSecurityHeader(KODE::Code& code)
+{
+	code += "KDSoapMessage securityHeader;";
+	code += "securityHeader.setUse(KDSoapMessage::LiteralUse);";
+	code += "KDSoapValue securityValue(QString::fromLatin1(\"Security\"), QVariant(), QString::fromLatin1(\"wsse\"));";
+	code += "securityValue.setQualified(true);";
+	code += "securityValue.setNamespaceUri(QString::fromLatin1(\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"));";
+	code += "KDSoapValueList& args = securityValue.childValues();";
+	code += "KDSoapValue usernameToken(QString::fromLatin1(\"UsernameToken\"), QVariant(), QString::fromLatin1(\"wsse\"));";
+	code += "usernameToken.setQualified(true);";
+	code += "usernameToken.setNamespaceUri(QString::fromLatin1(\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"));";
+	code += "KDSoapValueList& args1 = usernameToken.childValues();";
+	code += "KDSoapValue id(QString::fromLatin1(\"Id\"), QVariant(\"User\"), QString::fromLatin1(\"wsu\"));";
+	code += "id.setQualified(true);";
+	code += "id.setNamespaceUri(QString::fromLatin1(\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"));"; //This namespace is not used in the produced xml.
+	code += "args1.attributes().append(id);";
+	code += "KDSoapValue uname(QString::fromLatin1(\"Username\"), QVariant(username), QString::fromLatin1(\"wsse\"));";
+	code += "uname.setQualified(true);";
+	code += "uname.setNamespaceUri(QString::fromLatin1(\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"));";
+	code += "args1.append(uname);";
+	code += "KDSoapValue pword(QString::fromLatin1(\"Password\"), QVariant(password), QString::fromLatin1(\"wsse\"));";
+	code += "pword.setQualified(true);";
+	code += "pword.setNamespaceUri(QString::fromLatin1(\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\"));";
+	code += "args1.append(pword);";
+	code += "args.append(usernameToken);";
+	code += "securityHeader.childValues().append(securityValue);";
+	code += "clientInterface()->setHeader(QString::fromLatin1(\"security\"), securityHeader);";
+}
 
 bool Converter::convertClientService()
 {
@@ -121,11 +171,29 @@ bool Converter::convertClientService()
 
             // Ctor and dtor
             {
+                bool usernameToken = false;
+
+                Q_FOREACH( const Policy& policy, mWSDL.definitions().policies() ) {
+                    if( policy.usernameToken() ) {
+                        usernameToken = true;
+                    }
+                }
+
                 KODE::Function ctor( newClass.name() );
+                if( usernameToken ) {
+                    ctor.addArgument(KODE::Function::Argument(QLatin1String("QString username")));
+                    ctor.addArgument(KODE::Function::Argument(QLatin1String("QString password")));
+                }
                 ctor.addArgument(KODE::Function::Argument(QLatin1String("QObject* parent"), QLatin1String("0")));
                 ctor.addInitializer(QLatin1String("QObject(parent)"));
                 KODE::Function dtor( QLatin1Char('~') + newClass.name() );
                 KODE::Code ctorCode, dtorCode;
+
+                // Setup ctor for generating a header with wsp:Policy authentication
+                if( usernameToken ) {
+                    generateToHeader( ctorCode );
+                    generateSecurityHeader( ctorCode );
+                }
 
                 ctor.setBody( ctorCode );
                 newClass.addFunction( ctor );
@@ -153,6 +221,7 @@ bool Converter::convertClientService()
                 code += "if (d_ptr->m_clientInterface)";
                 code.indent();
                 code += "d_ptr->m_clientInterface->setEndPoint( endPoint );";
+                generateToHeader( code );
                 code.unindent();
                 setEndPoint.setBody(code);
                 setEndPoint.setDocs(QLatin1String("Overwrite the end point defined in the .wsdl file, with another http/https URL."));
@@ -520,6 +589,7 @@ KODE::Code Converter::deserializeRetVal(const KWSDL::Part& part, const QString& 
     return code;
 }
 
+//TODO: Add action header.
 // Generate synchronous call
 bool Converter::convertClientCall( const Operation &operation, const Binding &binding, KODE::Class &newClass )
 {
@@ -530,6 +600,7 @@ bool Converter::convertClientCall( const Operation &operation, const Binding &bi
   const Message outputMessage = mWSDL.findMessage( operation.output().message() );
   clientAddArguments( callFunc, inputMessage, newClass, operation, binding );
   KODE::Code code;
+  generateActionHeader( code, operation.name() );
   const bool hasAction = clientAddAction( code, binding, operation.name() );
   clientGenerateMessage( code, binding, inputMessage, operation );
   QString callLine = QLatin1String("d_ptr->m_lastReply = clientInterface()->call(QLatin1String(\"") + operation.name() + QLatin1String("\"), message");
@@ -622,6 +693,7 @@ void Converter::convertClientInputMessage( const Operation &operation,
   const Message message = mWSDL.findMessage( operation.input().message() );
   clientAddArguments( asyncFunc, message, newClass, operation, binding );
   KODE::Code code;
+  generateActionHeader( code, operationName );
   const bool hasAction = clientAddAction( code, binding, operation.name() );
   clientGenerateMessage( code, binding, message, operation );
 
