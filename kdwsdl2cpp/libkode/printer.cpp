@@ -108,7 +108,7 @@ QString Printer::Private::classHeader( const Class &classObject, bool publicMemb
   if ( !classObject.exportDeclaration().isEmpty() ) {
     txt += classObject.exportDeclaration().toUpper() + QLatin1String("_EXPORT ");
   }
-  txt += classObject.name();
+  txt += classObject.name().replace(".", "_");
 
   Class::List baseClasses = classObject.baseClasses();
   if ( !baseClasses.isEmpty() ) {
@@ -124,7 +124,7 @@ QString Printer::Private::classHeader( const Class &classObject, bool publicMemb
       if ( !bc.nameSpace().isEmpty() )
         txt += bc.nameSpace() + QLatin1String("::");
 
-      txt += bc.name();
+      txt += bc.name().replace(".", "_");
     }
   }
   code += txt;
@@ -194,24 +194,24 @@ QString Printer::Private::classHeader( const Class &classObject, bool publicMemb
 
   Function::List functions = classObject.functions();
 
-  addFunctionHeaders( code, functions, classObject.name(), Function::Public );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Public );
 
   if ( classObject.canBeCopied() && classObject.useDPointer() && !classObject.memberVariables().isEmpty() ) {
-    Function cc( classObject.name() );
-    cc.addArgument( QLatin1String("const ") + classObject.name() + QLatin1Char('&') );
-    Function op( QLatin1String("operator="), classObject.name() + QLatin1Char('&') );
-    op.addArgument( QLatin1String("const ") + classObject.name() + QLatin1Char('&') );
+    Function cc( classObject.name().replace(".", "_") );
+    cc.addArgument( QLatin1String("const ") + classObject.name().replace(".", "_") + QLatin1Char('&') );
+    Function op( QLatin1String("operator="), classObject.name().replace(".", "_") + QLatin1Char('&') );
+    op.addArgument( QLatin1String("const ") + classObject.name().replace(".", "_") + QLatin1Char('&') );
     Function::List list;
     list << cc << op;
-    addFunctionHeaders( code, list, classObject.name(), Function::Public );
+    addFunctionHeaders( code, list, classObject.name().replace(".", "_"), Function::Public );
   }
 
-  addFunctionHeaders( code, functions, classObject.name(), Function::Public | Function::Slot );
-  addFunctionHeaders( code, functions, classObject.name(), Function::Signal );
-  addFunctionHeaders( code, functions, classObject.name(), Function::Protected );
-  addFunctionHeaders( code, functions, classObject.name(), Function::Protected | Function::Slot );
-  addFunctionHeaders( code, functions, classObject.name(), Function::Private );
-  addFunctionHeaders( code, functions, classObject.name(), Function::Private | Function::Slot );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Public | Function::Slot );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Signal );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Protected );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Protected | Function::Slot );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Private );
+  addFunctionHeaders( code, functions, classObject.name().replace(".", "_"), Function::Private | Function::Slot );
 
   if ( !classObject.memberVariables().isEmpty() ) {
     Function::List::ConstIterator it;
@@ -250,7 +250,7 @@ QString Printer::Private::classHeader( const Class &classObject, bool publicMemb
         if ( v.isStatic() )
           decl += QLatin1String("static ");
 
-        decl += formatType( v.type() );
+        decl += formatType( v.type().replace(".", "_") );
 
         decl += v.name() + QLatin1Char(';');
 
@@ -282,9 +282,9 @@ QString Printer::Private::classImplementation( const Class &classObject, bool ne
 
   bool needNewLine = false;
 
-  QString functionClassName = classObject.name();
+  QString functionClassName = classObject.name().replace(".", "_");
   if (nestedClass)
-      functionClassName.prepend( classObject.parentClassName() + QLatin1String("::") );
+      functionClassName.prepend( classObject.parentClassName().replace(".", "_") + QLatin1String("::") );
   else if ( !classObject.nameSpace().isEmpty() )
       functionClassName.prepend( classObject.nameSpace() + QLatin1String("::") );
 
@@ -345,10 +345,10 @@ QString Printer::Private::classImplementation( const Class &classObject, bool ne
 
     QStringList inits = f.initializers();
     if ( classObject.useDPointer() && !classObject.memberVariables().isEmpty() &&
-         f.name() == classObject.name() ) {
+         f.name() == classObject.name().replace(".", "_") ) {
       inits.append( classObject.dPointerName() + QLatin1String("(new PrivateDPtr)") );
     }
-    if ( !classObject.useDPointer() && f.name() == classObject.name()
+    if ( !classObject.useDPointer() && f.name() == classObject.name().replace(".", "_")
          && f.arguments().isEmpty() ) {
       // Default constructor: add initializers for variables
       for ( itV = vars.constBegin(); itV != vars.constEnd(); ++itV ) {
@@ -370,7 +370,7 @@ QString Printer::Private::classImplementation( const Class &classObject, bool ne
 
     if ( classObject.useDPointer() && !classObject.useSharedData() &&
         !classObject.memberVariables().isEmpty() &&
-        f.name() == QLatin1Char('~') + classObject.name() ) {
+        f.name() == QLatin1Char('~') + classObject.name().replace(".", "_") ) {
       // Delete d pointer
       code.newLine();
       code.indent();
@@ -385,7 +385,7 @@ QString Printer::Private::classImplementation( const Class &classObject, bool ne
   if ( classObject.useDPointer() && classObject.canBeCopied() && !classObject.memberVariables().isEmpty() ) {
 
     // print copy constructor
-    Function cc( classObject.name() );
+    Function cc( classObject.name().replace(".", "_") );
     cc.addArgument( QLatin1String("const ") + functionClassName + QLatin1String("& other") );
 
     Code body;
@@ -570,7 +570,7 @@ QString Printer::functionSignature( const Function &function,
     s += QLatin1String("virtual ");
   }
 
-  QString ret = function.returnType();
+  QString ret = function.returnType().replace(".", "_");
   if ( !ret.isEmpty() ) {
     s += d->formatType( ret );
   }
@@ -578,16 +578,28 @@ QString Printer::functionSignature( const Function &function,
   if ( includeClassQualifier )
     s += className + QLatin1String("::");
 
-  s += function.name();
+  s += function.name().replace(".", "_");
 
   s += QLatin1Char('(');
   if ( function.hasArguments() ) {
     QStringList arguments;
     foreach( Function::Argument argument, function.arguments() ) {
       if ( includeDefaultArguments ) {
-        arguments.append( argument.headerDeclaration() );
+        QStringList argumentParts = QString(argument.headerDeclaration()).split(" ");
+        if(argumentParts.length() > 2) { //Try to handle const, etc.
+          argumentParts[1].replace(".", "_");
+        } else {
+          argumentParts[0].replace(".", "_");
+        }
+        arguments.append( argumentParts.join(" ") );
       } else {
-        arguments.append( argument.bodyDeclaration() );
+        QStringList argumentParts = QString(argument.bodyDeclaration()).split(" ");
+        if(argumentParts.length() > 2) { //Try to handle const, etc.
+          argumentParts[1].replace(".", "_");
+        } else {
+          argumentParts[0].replace(".", "_");
+        }
+        arguments.append( argumentParts.join(" ") );
       }
     }
     s += QLatin1Char(' ') + arguments.join( QLatin1String(", ") ) + QLatin1Char(' ');
@@ -744,7 +756,7 @@ void Printer::printHeader( const File &file )
     }
 
     if (!clas.isNull())
-      out += QLatin1String("class ") + clas + QLatin1Char(';');
+      out += QLatin1String("class ") + QString(clas).replace(".", "_") + QLatin1Char(';');
     prevNS = ns;
   }
 
