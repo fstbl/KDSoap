@@ -54,7 +54,7 @@ QString KDSoapNamespaceManager::xmlSchemaInstance2001()
 QString KDSoapNamespaceManager::soapEnvelope(const SoapVersion soapVersion)
 {
     QString s;
-    if(soapVersion == SOAP1_2) {
+    if(soapVersion == SOAP1_2 || SOAP1_2_XOP) {
         s = QString::fromLatin1("http://www.w3.org/2003/05/soap-envelope");
     } else {
         s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/envelope/");
@@ -65,7 +65,7 @@ QString KDSoapNamespaceManager::soapEnvelope(const SoapVersion soapVersion)
 QString KDSoapNamespaceManager::soapEncoding(const SoapVersion soapVersion)
 {
     QString s;
-    if(soapVersion == SOAP1_2) {
+    if(soapVersion == SOAP1_2 || SOAP1_2_XOP) {
         s = QString::fromLatin1("http://www.w3.org/2003/05/soap-encoding");
     } else {
         s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/encoding/");

@@ -43,7 +43,11 @@ enum SoapVersion {
     /** Use format version 1.1 of the SOAP specification */
     SOAP1_1 = 1,
     /** Use format version 1.2 of the SOAP specification */
-    SOAP1_2 = 2
+    SOAP1_2 = 2,
+    /** Use format version 1.1 of the SOAP specification in XML-binary Optimized Packaging */
+    SOAP1_1_XOP = 3,
+    /** Use format version 1.2 of the SOAP specification in XML-binary Optimized Packaging */
+    SOAP1_2_XOP = 4
 };
 
 #endif /* KDSOAPGLOBAL_H */

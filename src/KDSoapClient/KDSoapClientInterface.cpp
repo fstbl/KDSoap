@@ -29,6 +29,7 @@
 #include <QDebug>
 #include <QBuffer>
 #include <QNetworkProxy>
+#include <QtNetwork/QHttpMultiPart>
 
 KDSoapClientInterface::KDSoapClientInterface(const QString& endPoint, const QString& messageNamespace)
     : d(new Private)
@@ -66,7 +67,7 @@ KDSoapClientInterface::Private::Private()
     m_accessManager.cookieJar(); // create it in the right thread...
 }
 
-QNetworkRequest KDSoapClientInterface::Private::prepareRequest(const QString &method, const QString& action)
+QNetworkRequest KDSoapClientInterface::Private::prepareRequest(const QString &method, const QString& action, const QString& boundary)
 {
     QNetworkRequest request(QUrl(this->m_endPoint));
 
@@ -87,7 +88,15 @@ QNetworkRequest KDSoapClientInterface::Private::prepareRequest(const QString &me
         soapHeader += QString::fromLatin1("text/xml;charset=utf-8");
         request.setRawHeader("SoapAction", '\"' + soapAction.toUtf8() + '\"');
     } else if (m_version == SOAP1_2) {
-        soapHeader += QString::fromLatin1("application/soap+xml;charset=utf-8;action=") + soapAction;
+        soapHeader += QString::fromLatin1("application/soap+xml;charset=utf-8;action=\"") + soapAction + QLatin1String("\"");
+    } else if(m_version == SOAP1_1_XOP) {
+        soapHeader += QString::fromLatin1("multipart/related; type=\"application/xop+xml\";");
+        soapHeader += QString::fromLatin1("start=\"<http://tempuri.org/0>\";boundary=\"") + boundary + QString::fromLatin1("\";start-info=\"text/xml\"");
+        request.setRawHeader("SoapAction", '\"' + soapAction.toUtf8() + '\"');
+    } else if(m_version == SOAP1_2_XOP) {
+        soapHeader += QString::fromLatin1("multipart/related; type=\"application/xop+xml\";");
+        soapHeader += QString::fromLatin1("start=\"<http://tempuri.org/0>\";boundary=\"") + boundary + QString::fromLatin1("\";start-info=\"application/soap+xml\";");
+        soapHeader += QString::fromLatin1("action=\"") + soapAction + QLatin1String("\"");
     }
 
     request.setHeader(QNetworkRequest::ContentTypeHeader, soapHeader.toUtf8());
@@ -114,14 +123,45 @@ QBuffer* KDSoapClientInterface::Private::prepareRequestBuffer(const QString& met
     return buffer;
 }
 
+//Use mime parts iff the SOAP version is XOP.
+QHttpMultiPart* KDSoapClientInterface::Private::prepareMimeRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers)
+{
+    QHttpMultiPart *mime = new QHttpMultiPart(QHttpMultiPart::RelatedType);
+
+    QHttpPart soapPart;
+    soapPart.setRawHeader("Content-Id", "<http://tempuri.org/0>");
+    soapPart.setRawHeader("Content-Transfer-Encoding", "binary");
+    if (m_version == SOAP1_1_XOP) {
+        soapPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString::fromLatin1("application/xop+xml;charset=utf-8;type=\"text/xml\"")));
+    } else if (m_version == SOAP1_2_XOP) {
+        soapPart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant(QString::fromLatin1("application/xop+xml;charset=utf-8;type=\"application/soap+xml\"")));
+    }
+
+    //TODO: Catch base64 and use xop instead. B4152: WCF optimizes element information items that contain base64-encoded data and exceed 1024 bytes in length.
+    KDSoapMessageWriter msgWriter;
+    msgWriter.setMessageNamespace(m_messageNamespace);
+    const QByteArray data = msgWriter.messageToXml(message, (m_style == RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
+    soapPart.setBody(data);
+
+    mime->append(soapPart);
+    return mime;
+}
+
 KDSoapPendingCall KDSoapClientInterface::asyncCall(const QString &method, const KDSoapMessage &message, const QString& soapAction, const KDSoapHeaders& headers)
 {
-    QBuffer* buffer = d->prepareRequestBuffer(method, message, headers);
-    QNetworkRequest request = d->prepareRequest(method, soapAction);
-    //qDebug() << "post()";
-    QNetworkReply* reply = d->m_accessManager.post(request, buffer);
-    d->setupReply(reply);
-    return KDSoapPendingCall(reply, buffer);
+    if (d->m_version == SOAP1_1_XOP || d->m_version == SOAP1_2_XOP) {
+        QHttpMultiPart* buffer = d->prepareMimeRequestBuffer(method, message, headers);
+        QNetworkRequest request = d->prepareRequest(method, soapAction);
+        QNetworkReply* reply = d->m_accessManager.post(request, buffer);
+        d->setupReply(reply);
+        return KDSoapPendingCall(reply, buffer);
+    } else {
+        QBuffer* buffer = d->prepareRequestBuffer(method, message, headers);
+        QNetworkRequest request = d->prepareRequest(method, soapAction);
+        QNetworkReply* reply = d->m_accessManager.post(request, buffer);
+        d->setupReply(reply);
+        return KDSoapPendingCall(reply, buffer);
+    }
 }
 
 KDSoapMessage KDSoapClientInterface::call(const QString& method, const KDSoapMessage &message, const QString& soapAction, const KDSoapHeaders& headers)
@@ -143,9 +183,16 @@ KDSoapMessage KDSoapClientInterface::call(const QString& method, const KDSoapMes
 
 void KDSoapClientInterface::callNoReply(const QString &method, const KDSoapMessage &message, const QString &soapAction, const KDSoapHeaders& headers)
 {
-    QBuffer* buffer = d->prepareRequestBuffer(method, message, headers);
-    QNetworkRequest request = d->prepareRequest(method, soapAction);
-    QNetworkReply* reply = d->m_accessManager.post(request, buffer);
+    QNetworkReply* reply = NULL;
+    if (d->m_version == SOAP1_1_XOP || d->m_version == SOAP1_2_XOP) {
+        QBuffer* buffer = d->prepareRequestBuffer(method, message, headers);
+        QNetworkRequest request = d->prepareRequest(method, soapAction);
+        reply = d->m_accessManager.post(request, buffer);
+    } else {
+        QHttpMultiPart* buffer = d->prepareMimeRequestBuffer(method, message, headers);
+        QNetworkRequest request = d->prepareRequest(method, soapAction);
+        reply = d->m_accessManager.post(request, buffer);
+    }
     d->setupReply(reply);
     QObject::connect(reply, SIGNAL(finished()), reply, SLOT(deleteLater()));
 }

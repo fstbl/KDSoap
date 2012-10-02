@@ -25,15 +25,23 @@
 #include "KDSoapMessageReader_p.h"
 #include <QNetworkReply>
 #include <QDebug>
+#include <QStringList>
+#include <QtNetwork/QHttpMultiPart>
 
 KDSoapPendingCall::Private::~Private()
 {
     delete reply.data();
     delete buffer;
+    delete mimeBuffer;
 }
 
 
 KDSoapPendingCall::KDSoapPendingCall(QNetworkReply* reply, QBuffer* buffer)
+    : d(new Private(reply, buffer))
+{
+}
+
+KDSoapPendingCall::KDSoapPendingCall(QNetworkReply* reply, QHttpMultiPart* buffer)
     : d(new Private(reply, buffer))
 {
 }
@@ -106,7 +114,14 @@ void KDSoapPendingCall::Private::parseReply(const SoapVersion soapVersion)
             return;
         // HTTP 500 is used to return faults, so parse the fault, below
     }
-    const QByteArray data = reply->readAll();
+
+    QByteArray data;
+    QHttpMultiPart *multiPart = new QHttpMultiPart();
+    if (reply->multiPart(multiPart)) {
+        data = multiPart->parts()[0].body();
+    } else {
+        data = reply->readAll();
+    }
     if (doDebug) {
         qDebug() << data;
     }

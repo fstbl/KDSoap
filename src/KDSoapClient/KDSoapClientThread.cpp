@@ -31,6 +31,7 @@
 #include <QBuffer>
 #include <QEventLoop>
 #include <QAuthenticator>
+#include <QHttpMultiPart>
 
 KDSoapClientThread::KDSoapClientThread(QObject *parent) :
     QThread(parent), m_stopThread(false)
@@ -90,13 +91,25 @@ void KDSoapThreadTask::process(QNetworkAccessManager& accessManager)
 
     accessManager.setProxy( m_data->m_iface->d->m_accessManager.proxy() );
 
-    QBuffer* buffer = m_data->m_iface->d->prepareRequestBuffer(m_data->m_method, m_data->m_message, m_data->m_headers);
-    QNetworkRequest request = m_data->m_iface->d->prepareRequest(m_data->m_method, m_data->m_action);
-    QNetworkReply* reply = accessManager.post(request, buffer);
-    m_data->m_iface->d->setupReply(reply);
-    KDSoapPendingCall pendingCall(reply, buffer);
+    KDSoapPendingCallWatcher *watcher = NULL;
 
-    KDSoapPendingCallWatcher *watcher = new KDSoapPendingCallWatcher(pendingCall, this);
+    if (m_data->m_iface->d->m_version == SOAP1_1_XOP || m_data->m_iface->d->m_version == SOAP1_2_XOP) {
+        QHttpMultiPart* buffer = m_data->m_iface->d->prepareMimeRequestBuffer(m_data->m_method, m_data->m_message, m_data->m_headers);
+        QNetworkRequest request = m_data->m_iface->d->prepareRequest(m_data->m_method, m_data->m_action, QString::fromUtf8(buffer->boundary().constData()));
+        QNetworkReply* reply = accessManager.post(request, buffer);
+        m_data->m_iface->d->setupReply(reply);
+        KDSoapPendingCall pendingCall(reply, buffer);
+
+        watcher = new KDSoapPendingCallWatcher(pendingCall, this);
+    } else {
+        QBuffer* buffer = m_data->m_iface->d->prepareRequestBuffer(m_data->m_method, m_data->m_message, m_data->m_headers);
+        QNetworkRequest request = m_data->m_iface->d->prepareRequest(m_data->m_method, m_data->m_action);
+        QNetworkReply* reply = accessManager.post(request, buffer);
+        m_data->m_iface->d->setupReply(reply);
+        KDSoapPendingCall pendingCall(reply, buffer);
+
+        watcher = new KDSoapPendingCallWatcher(pendingCall, this);
+    }
     connect(watcher, SIGNAL(finished(KDSoapPendingCallWatcher*)),
             this, SLOT(slotFinished(KDSoapPendingCallWatcher*)));
 }

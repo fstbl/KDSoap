@@ -32,6 +32,7 @@
 #include <QPointer>
 #endif
 
+class QHttpMultiPart;
 class QNetworkReply;
 class KDSoapValue;
 
@@ -39,7 +40,11 @@ class KDSoapPendingCall::Private : public QSharedData
 {
 public:
     Private(QNetworkReply* r, QBuffer* b)
-        : reply(r), buffer(b), parsed(false)
+        : reply(r), buffer(b), mimeBuffer(NULL), parsed(false)
+    {
+    }
+    Private(QNetworkReply* r, QHttpMultiPart* b)
+        : reply(r), buffer(NULL), mimeBuffer(b), parsed(false)
     {
     }
     ~Private();
@@ -55,6 +60,7 @@ public:
     QPointer<QNetworkReply> reply;
 #endif
     QBuffer* buffer;
+    QHttpMultiPart* mimeBuffer;
     KDSoapMessage replyMessage;
     KDSoapHeaders replyHeaders;
     bool parsed;

@@ -238,7 +238,7 @@ bool Converter::convertClientService()
                 code += "clientInterface()->setSoapVersion(soapVersion);";
                 setSoapVersion.setBody(code);
                 setSoapVersion.setDocs(QLatin1String("Overwrite the soap version defined in the .wsdl file, with another version. \n"
-                "version can be KDSoapClientInterface::SOAP1_1 or KDSoapClientInterface::SOAP1_2"));
+                "version can be SOAP1_1, SOAP1_1_XOP, SOAP1_2 or SOAP1_2_XOP"));
                 newClass.addFunction(setSoapVersion);
             }
             // lastError() method

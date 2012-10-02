@@ -24,6 +24,8 @@
 
 #include <QtCore/QExplicitlySharedDataPointer>
 #include "KDSoapMessage.h"
+
+class QHttpMultiPart;
 class QNetworkReply;
 class QBuffer;
 class KDSoapPendingCallWatcher;
@@ -107,6 +109,7 @@ private:
     friend class KDSoapClientInterface;
     friend class KDSoapThreadTask;
     KDSoapPendingCall(QNetworkReply* reply, QBuffer* buffer);
+    KDSoapPendingCall(QNetworkReply* reply, QHttpMultiPart* buffer);
 
     friend class KDSoapPendingCallWatcher; // for connecting to d->reply
 
