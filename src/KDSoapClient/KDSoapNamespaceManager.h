@@ -23,7 +23,10 @@
 #define KDSOAPNAMESPACEMANAGER_H
 
 #include "KDSoapGlobal.h"
+#include "KDSoapClientInterface.h"
 #include <QtCore/QString>
+
+class KDSoapClientInterface;
 
 /**
  * Repository of namespaces
@@ -35,8 +38,8 @@ public:
     static QString xmlSchema2001();
     static QString xmlSchemaInstance1999();
     static QString xmlSchemaInstance2001();
-    static QString soapEnvelope();
-    static QString soapEncoding();
+    static QString soapEnvelope(const SoapVersion soapVersion);
+    static QString soapEncoding(const SoapVersion soapVersion);
 
 private: // TODO instanciate to handle custom namespaces per clientinterface
     KDSoapNamespaceManager();

@@ -22,10 +22,10 @@
 #include "KDSoapNamespacePrefixes_p.h"
 #include "KDSoapNamespaceManager.h"
 
-void KDSoapNamespacePrefixes::writeStandardNamespaces(QXmlStreamWriter& writer)
+void KDSoapNamespacePrefixes::writeStandardNamespaces(QXmlStreamWriter &writer, const SoapVersion soapVersion)
 {
-    writeNamespace(writer, KDSoapNamespaceManager::soapEnvelope(), QLatin1String("soap"));
-    writeNamespace(writer, KDSoapNamespaceManager::soapEncoding(), QLatin1String("soap-enc"));
+    writeNamespace(writer, KDSoapNamespaceManager::soapEnvelope(soapVersion), QLatin1String("soap"));
+    writeNamespace(writer, KDSoapNamespaceManager::soapEncoding(soapVersion), QLatin1String("soap-enc"));
     writeNamespace(writer, KDSoapNamespaceManager::xmlSchema1999(), QLatin1String("xsd"));
     writeNamespace(writer, KDSoapNamespaceManager::xmlSchemaInstance1999(), QLatin1String("xsi"));
 

@@ -85,7 +85,7 @@ static int xmlTypeToMetaType(const QString& xmlType)
     return -1;
 }
 
-static KDSoapValue parseElement(QXmlStreamReader& reader, const QXmlStreamNamespaceDeclarations& envNsDecls)
+static KDSoapValue parseElement(QXmlStreamReader& reader, const QXmlStreamNamespaceDeclarations& envNsDecls, const SoapVersion soapVersion)
 {
     const QString name = reader.name().toString();
     KDSoapValue val(name, QVariant());
@@ -111,7 +111,7 @@ static KDSoapValue parseElement(QXmlStreamReader& reader, const QXmlStreamNamesp
                 metaTypeId = static_cast<QVariant::Type>(xmlTypeToMetaType(dataType));
             }
             continue;
-        } else if (ns == KDSoapNamespaceManager::soapEncoding() || ns == KDSoapNamespaceManager::soapEnvelope()) {
+        } else if (ns == KDSoapNamespaceManager::soapEncoding(soapVersion) || ns == KDSoapNamespaceManager::soapEnvelope(soapVersion)) {
             continue;
         }
         //qDebug() << "Got attribute:" << name << ns << "=" << attrValue;
@@ -125,7 +125,7 @@ static KDSoapValue parseElement(QXmlStreamReader& reader, const QXmlStreamNamesp
             text = reader.text().toString();
             //qDebug() << "text=" << text;
         } else if (reader.isStartElement()) {
-            const KDSoapValue subVal = parseElement(reader, envNsDecls); // recurse
+            const KDSoapValue subVal = parseElement(reader, envNsDecls, soapVersion); // recurse
             val.childValues().append(subVal);
         }
     }
@@ -149,26 +149,26 @@ KDSoapMessageReader::KDSoapMessageReader()
 {
 }
 
-KDSoapMessageReader::XmlError KDSoapMessageReader::xmlToMessage(const QByteArray& data, KDSoapMessage* pMsg, QString* pMessageNamespace, KDSoapHeaders* pRequestHeaders) const
+KDSoapMessageReader::XmlError KDSoapMessageReader::xmlToMessage(const QByteArray& data, KDSoapMessage* pMsg, QString* pMessageNamespace, KDSoapHeaders* pRequestHeaders, const SoapVersion soapVersion) const
 {
     Q_ASSERT(pMsg);
     QXmlStreamReader reader(data);
     if (readNextStartElement(reader)) {
-        if (reader.name() == "Envelope" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope()) {
+        if (reader.name() == "Envelope" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope(soapVersion)) {
             const QXmlStreamNamespaceDeclarations envNsDecls = reader.namespaceDeclarations();
             if (readNextStartElement(reader)) {
-                if (reader.name() == "Header" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope()) {
+                if (reader.name() == "Header" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope(soapVersion)) {
                     while (readNextStartElement(reader)) {
                         KDSoapMessage header;
-                        static_cast<KDSoapValue &>(header) = parseElement(reader, envNsDecls);
+                        static_cast<KDSoapValue &>(header) = parseElement(reader, envNsDecls, soapVersion);
                         pRequestHeaders->append(header);
                     }
                     readNextStartElement(reader); // read <Body>
                 }
-                if (reader.name() == "Body" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope()) {
+                if (reader.name() == "Body" && reader.namespaceUri() == KDSoapNamespaceManager::soapEnvelope(soapVersion)) {
 
                     if (readNextStartElement(reader)) {
-                        *pMsg = parseElement(reader, envNsDecls);
+                        *pMsg = parseElement(reader, envNsDecls, soapVersion);
                         if (pMessageNamespace)
                             *pMessageNamespace = pMsg->namespaceUri();
                         if (pMsg->name() == QLatin1String("Fault"))

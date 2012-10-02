@@ -36,7 +36,8 @@ void KDSoapMessageWriter::setMessageNamespace(const QString &ns)
 }
 
 QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const QString& method,
-                                             const KDSoapHeaders& headers, const QMap<QString, KDSoapMessage>& persistentHeaders) const
+                                             const KDSoapHeaders& headers, const QMap<QString, KDSoapMessage>& persistentHeaders,
+                                             const SoapVersion soapVersion) const
 {
     QByteArray data;
     QXmlStreamWriter writer(&data);
@@ -46,11 +47,11 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
     writer.writeStartDocument();
 
     KDSoapNamespacePrefixes namespacePrefixes;
-    namespacePrefixes.writeStandardNamespaces(writer);
+    namespacePrefixes.writeStandardNamespaces(writer, soapVersion);
 
-    const QString soapNS = KDSoapNamespaceManager::soapEnvelope();
+    const QString soapNS = KDSoapNamespaceManager::soapEnvelope(soapVersion);
     writer.writeStartElement(soapNS, QLatin1String("Envelope"));
-    writer.writeAttribute(soapNS, QLatin1String("encodingStyle"), KDSoapNamespaceManager::soapEncoding());
+    writer.writeAttribute(soapNS, QLatin1String("encodingStyle"), KDSoapNamespaceManager::soapEncoding(soapVersion));
 
     QString messageNamespace = m_messageNamespace;
     if (!message.namespaceUri().isEmpty() && messageNamespace != message.namespaceUri()) {
@@ -64,10 +65,10 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
         namespacePrefixes.writeNamespace(writer, messageNamespace, QLatin1String("n1") /*make configurable?*/);
         writer.writeStartElement(soapNS, QLatin1String("Header"));
         Q_FOREACH(const KDSoapMessage& header, persistentHeaders) {
-            header.writeChildren(namespacePrefixes, writer, header.use(), messageNamespace, true);
+            header.writeChildren(namespacePrefixes, writer, header.use(), messageNamespace, true, soapVersion);
         }
         Q_FOREACH(const KDSoapMessage& header, headers) {
-            header.writeChildren(namespacePrefixes, writer, header.use(), messageNamespace, true);
+            header.writeChildren(namespacePrefixes, writer, header.use(), messageNamespace, true, soapVersion);
         }
         writer.writeEndElement(); // Header
     } else {
@@ -91,7 +92,7 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
         // http://www.ibm.com/developerworks/webservices/library/ws-tip-namespace/index.html
         // isQualified() is only for child elements.
         writer.writeStartElement(messageNamespace, elementName);
-        message.writeElementContents(namespacePrefixes, writer, message.use(), messageNamespace);
+        message.writeElementContents(namespacePrefixes, writer, message.use(), messageNamespace, soapVersion);
         writer.writeEndElement();
     }
 

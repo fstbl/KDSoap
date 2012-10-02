@@ -62,27 +62,27 @@ bool KDSoapPendingCall::isFinished() const
 #endif
 }
 
-KDSoapMessage KDSoapPendingCall::returnMessage() const
+KDSoapMessage KDSoapPendingCall::returnMessage(const SoapVersion soapVersion) const
 {
-    d->parseReply();
+    d->parseReply(soapVersion);
     return d->replyMessage;
 }
 
-KDSoapHeaders KDSoapPendingCall::returnHeaders() const
+KDSoapHeaders KDSoapPendingCall::returnHeaders(const SoapVersion soapVersion) const
 {
-    d->parseReply();
+    d->parseReply(soapVersion);
     return d->replyHeaders;
 }
 
-QVariant KDSoapPendingCall::returnValue() const
+QVariant KDSoapPendingCall::returnValue(const SoapVersion soapVersion) const
 {
-    d->parseReply();
+    d->parseReply(soapVersion);
     if (!d->replyMessage.childValues().isEmpty())
         return d->replyMessage.childValues().first().value();
     return QVariant();
 }
 
-void KDSoapPendingCall::Private::parseReply()
+void KDSoapPendingCall::Private::parseReply(const SoapVersion soapVersion)
 {
     if (parsed)
         return;
@@ -107,9 +107,10 @@ void KDSoapPendingCall::Private::parseReply()
         // HTTP 500 is used to return faults, so parse the fault, below
     }
     const QByteArray data = reply->readAll();
-    if (doDebug)
+    if (doDebug) {
         qDebug() << data;
+    }
 
     KDSoapMessageReader reader;
-    reader.xmlToMessage(data, &replyMessage, 0, &replyHeaders);
+    reader.xmlToMessage(data, &replyMessage, 0, &replyHeaders, soapVersion);
 }

@@ -35,5 +35,16 @@
 #  endif
 # endif
 
+/**
+ * Version of the SOAP protocol to use when sending requests.
+ * \see setSoapVersion()
+ */
+enum SoapVersion {
+    /** Use format version 1.1 of the SOAP specification */
+    SOAP1_1 = 1,
+    /** Use format version 1.2 of the SOAP specification */
+    SOAP1_2 = 2
+};
+
 #endif /* KDSOAPGLOBAL_H */
 

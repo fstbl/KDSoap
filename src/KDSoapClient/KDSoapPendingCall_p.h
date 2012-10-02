@@ -44,7 +44,7 @@ public:
     }
     ~Private();
 
-    void parseReply();
+    void parseReply(const SoapVersion soapVersion);
     KDSoapValue parseReplyElement(QXmlStreamReader& reader);
 
     // Can be deleted under us if the KDSoapClientInterface (and its QNetworkAccessManager)

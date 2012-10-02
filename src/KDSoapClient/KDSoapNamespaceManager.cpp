@@ -21,6 +21,8 @@
 **********************************************************************/
 #include "KDSoapNamespaceManager.h"
 
+#include "KDSoapClientInterface.h"
+
 KDSoapNamespaceManager::KDSoapNamespaceManager()
 {
 }
@@ -49,14 +51,24 @@ QString KDSoapNamespaceManager::xmlSchemaInstance2001()
     return s;
 }
 
-QString KDSoapNamespaceManager::soapEnvelope()
+QString KDSoapNamespaceManager::soapEnvelope(const SoapVersion soapVersion)
 {
-    static QString s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/envelope/");
+    QString s;
+    if(soapVersion == SOAP1_2) {
+        s = QString::fromLatin1("http://www.w3.org/2003/05/soap-envelope");
+    } else {
+        s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/envelope/");
+    }
     return s;
 }
 
-QString KDSoapNamespaceManager::soapEncoding()
+QString KDSoapNamespaceManager::soapEncoding(const SoapVersion soapVersion)
 {
-    static QString s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/encoding/");
+    QString s;
+    if(soapVersion == SOAP1_2) {
+        s = QString::fromLatin1("http://www.w3.org/2003/05/soap-encoding");
+    } else {
+        s = QString::fromLatin1("http://schemas.xmlsoap.org/soap/encoding/");
+    }
     return s;
 }

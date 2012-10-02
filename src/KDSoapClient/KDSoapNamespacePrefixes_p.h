@@ -24,11 +24,12 @@
 
 #include <QtCore/QMap>
 #include <QtCore/QXmlStreamWriter>
+#include "KDSoapClientInterface.h"
 
 class KDSoapNamespacePrefixes : public QMap<QString /*ns*/, QString /*prefix*/>
 {
 public:
-    void writeStandardNamespaces(QXmlStreamWriter& writer);
+    void writeStandardNamespaces(QXmlStreamWriter& writer, const SoapVersion soapVersion);
 
     void writeNamespace(QXmlStreamWriter& writer, const QString& ns, const QString& prefix) {
         //qDebug() << "writeNamespace" << ns << prefix;

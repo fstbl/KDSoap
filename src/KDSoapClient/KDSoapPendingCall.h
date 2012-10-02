@@ -76,18 +76,18 @@ public:
      * Returns the response message sent by the server.
      * Could either be a fault (see KDSoapMessage::isFault) or the actual response arguments.
      */
-    KDSoapMessage returnMessage() const;
+    KDSoapMessage returnMessage(const SoapVersion soapVersion) const;
 
     /**
      * Helper method for the simple case where a single argument is returned:
      * Returns the value of that single argument.
      */
-    QVariant returnValue() const;
+    QVariant returnValue(const SoapVersion soapVersion) const;
 
     /**
      * Returns the response headers sent by the server.
      */
-    KDSoapHeaders returnHeaders() const;
+    KDSoapHeaders returnHeaders(const SoapVersion soapVersion) const;
 
     /**
      * Returns \c true if the pending call has finished processing and the reply has been received.

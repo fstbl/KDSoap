@@ -10,7 +10,7 @@
 MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
     m_service.setEndPoint(QLatin1String("http://localhost:8081"));
-    m_service.setSoapVersion(KDSoapClientInterface::SOAP1_2);
+    m_service.setSoapVersion(SOAP1_2);
     connect(&m_service, SIGNAL(sayHelloDone(QString)), this, SLOT(sayHelloDone(QString)));
     connect(&m_service, SIGNAL(sayHelloError(KDSoapMessage)), this, SLOT(sayHelloError(KDSoapMessage)));
     QWidget* central = new QWidget;

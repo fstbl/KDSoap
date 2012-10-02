@@ -233,7 +233,7 @@ bool Converter::convertClientService()
             //setSoapVersion() method
             {
                 KODE::Function setSoapVersion(QLatin1String("setSoapVersion"), QLatin1String("void"));
-                setSoapVersion.addArgument(QLatin1String("KDSoapClientInterface::SoapVersion soapVersion"));
+                setSoapVersion.addArgument(QLatin1String("SoapVersion soapVersion"));
                 KODE::Code code;
                 code += "clientInterface()->setSoapVersion(soapVersion);";
                 setSoapVersion.setBody(code);
@@ -291,9 +291,9 @@ bool Converter::convertClientService()
                     code += "d_ptr->m_clientInterface->setStyle( KDSoapClientInterface::DocumentStyle );";
                 }
                 if (binding.version() == Binding::SOAP_1_2)
-                    code += "d_ptr->m_clientInterface->setSoapVersion( KDSoapClientInterface::SOAP1_2 );";
+                    code += "d_ptr->m_clientInterface->setSoapVersion( SOAP1_2 );";
                 else
-                    code += "d_ptr->m_clientInterface->setSoapVersion( KDSoapClientInterface::SOAP1_1 );";
+                    code += "d_ptr->m_clientInterface->setSoapVersion( SOAP1_1 );";
                 code.unindent();
                 code += "}";
                 code += "return d_ptr->m_clientInterface;";
@@ -428,7 +428,7 @@ bool Converter::convertClientService()
                 slot.addArgument( QLatin1String("KDSoapPendingCallWatcher* watcher") );
                 KODE::Code slotCode;
                 slotCode += QLatin1String("watcher->deleteLater();");
-                slotCode += QLatin1String("const KDSoapMessage reply = watcher->returnMessage();");
+                slotCode += QLatin1String("const KDSoapMessage reply = watcher->returnMessage(mService->clientInterface()->soapVersion());");
                 slotCode += QLatin1String("if (!reply.isFault()) {") + COMMENT;
                 slotCode.indent();
                 Q_FOREACH( const Part& part, selectedParts( binding, outputMsg, operation, false /*input*/ ) ) {
@@ -446,14 +446,14 @@ bool Converter::convertClientService()
 
                     const QString varName = QLatin1String("resultHeader") + upperlize( part.name() );
                     const KODE::MemberVariable member( varName, QString() );
-                    const QString getHeader = QString::fromLatin1("watcher->returnHeaders().header(QLatin1String(\"%1\"), QLatin1String(\"%2\"))").arg(part.element().localName(), part.element().nameSpace());
+                    const QString getHeader = QString::fromLatin1("watcher->returnHeaders(mService->clientInterface()->soapVersion()).header(QLatin1String(\"%1\"), QLatin1String(\"%2\"))").arg(part.element().localName(), part.element().nameSpace());
                     slotCode.addBlock( deserializeRetVal(part, getHeader, mTypeMap.localType(part.type(), part.element() ), member.name() ) );
                     addJobResultMember(jobClass, part, varName, inputGetters);
                 }
 
                 slotCode.unindent();
                 slotCode += QLatin1String("}");
-                slotCode += QLatin1String("emitFinished(reply, watcher->returnHeaders());");
+                slotCode += QLatin1String("emitFinished(reply, watcher->returnHeaders(mService->clientInterface()->soapVersion()));");
                 slot.setBody( slotCode );
                 jobClass.addFunction( slot );
 
@@ -749,7 +749,7 @@ void Converter::convertClientOutputMessage( const Operation &operation,
   //  return;
 
   KODE::Code slotCode;
-  slotCode += "const KDSoapMessage reply = watcher->returnMessage();";
+  slotCode += "const KDSoapMessage reply = watcher->returnMessage(clientInterface()->soapVersion());";
   slotCode += "if (reply.isFault()) {";
   slotCode.indent();
   slotCode += QLatin1String("Q_EMIT ") + errorSignal.name() + QLatin1String("(reply);") + COMMENT;

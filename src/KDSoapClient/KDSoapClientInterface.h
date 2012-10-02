@@ -57,17 +57,6 @@ class KDSOAP_EXPORT KDSoapClientInterface
 {
 public:
     /**
-     * Version of the SOAP protocol to use when sending requests.
-     * \see setSoapVersion()
-     */
-    enum SoapVersion {
-      /** Use format version 1.1 of the SOAP specification */
-      SOAP1_1 = 1,
-      /** Use format version 1.2 of the SOAP specification */
-      SOAP1_2 = 2
-    };
-
-    /**
      * Creates a KDSoapClientInterface object associated with the end point \p endPoint.
      * \note No connection is done yet at this point, the parameters are simply stored for later use.
      * \param endPoint the URL of the SOAP service, including http or https scheme, port number

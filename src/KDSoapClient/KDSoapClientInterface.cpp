@@ -45,12 +45,12 @@ KDSoapClientInterface::~KDSoapClientInterface()
     delete d;
 }
 
-void KDSoapClientInterface::setSoapVersion(KDSoapClientInterface::SoapVersion version)
+void KDSoapClientInterface::setSoapVersion(SoapVersion version)
 {
     d->m_version = version;
 }
 
-KDSoapClientInterface::SoapVersion KDSoapClientInterface::soapVersion()
+SoapVersion KDSoapClientInterface::soapVersion()
 {
   return d->m_version;
 }
@@ -107,7 +107,7 @@ QBuffer* KDSoapClientInterface::Private::prepareRequestBuffer(const QString& met
 {
     KDSoapMessageWriter msgWriter;
     msgWriter.setMessageNamespace(m_messageNamespace);
-    const QByteArray data = msgWriter.messageToXml(message, (m_style == RPCStyle) ? method : QString(), headers, m_persistentHeaders);
+    const QByteArray data = msgWriter.messageToXml(message, (m_style == RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
     QBuffer* buffer = new QBuffer;
     buffer->setData(data);
     buffer->open(QIODevice::ReadOnly);

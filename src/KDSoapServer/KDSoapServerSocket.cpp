@@ -24,6 +24,7 @@
 #include "KDSoapServerObjectInterface.h"
 #include "KDSoapServerAuthInterface.h"
 #include "KDSoapServer.h"
+#include <KDSoapGlobal.h>
 #include <KDSoapClient/KDSoapMessage.h>
 #include <KDSoapClient/KDSoapNamespaceManager.h>
 #include <KDSoapClient/KDSoapMessageReader_p.h>
@@ -207,7 +208,7 @@ void KDSoapServerSocket::slotReadyRead()
     KDSoapMessage requestMsg;
     KDSoapHeaders requestHeaders;
     KDSoapMessageReader reader;
-    KDSoapMessageReader::XmlError err = reader.xmlToMessage(receivedData, &requestMsg, &m_messageNamespace, &requestHeaders);
+    KDSoapMessageReader::XmlError err = reader.xmlToMessage(receivedData, &requestMsg, &m_messageNamespace, &requestHeaders, SOAP1_1); //TODO: Fix hardcoded SOAP version.
     if (err == KDSoapMessageReader::PrematureEndOfDocumentError) {
         //qDebug() << "Incomplete SOAP message, wait for more data";
         // This should never happen, since we check for content-size above.
@@ -338,7 +339,7 @@ void KDSoapServerSocket::sendReply(KDSoapServerObjectInterface* serverObjectInte
         }
     }
     msgWriter.setMessageNamespace(responseNamespace);
-    const QByteArray xmlResponse = msgWriter.messageToXml(replyMsg, responseName, responseHeaders, QMap<QString, KDSoapMessage>());
+    const QByteArray xmlResponse = msgWriter.messageToXml(replyMsg, responseName, responseHeaders, QMap<QString, KDSoapMessage>(), SOAP1_1); //TODO: Fix hardcoded SOAP version.
     const QByteArray response = httpResponseHeaders(isFault, "text/xml", xmlResponse.size());
     if (m_doDebug) {
         qDebug() << "KDSoapServerSocket: writing" << response << xmlResponse;

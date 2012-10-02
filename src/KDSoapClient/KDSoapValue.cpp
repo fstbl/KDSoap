@@ -234,7 +234,7 @@ static QString variantToXMLType(const QVariant& value)
     }
 }
 
-void KDSoapValue::writeElement(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified) const
+void KDSoapValue::writeElement(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified, const SoapVersion soapVersion) const
 {
     Q_ASSERT(!name().isEmpty());
     if ( !d->m_nameNamespace.isEmpty() && d->m_nameNamespace != messageNamespace )
@@ -250,11 +250,11 @@ void KDSoapValue::writeElement(KDSoapNamespacePrefixes& namespacePrefixes, QXmlS
     } else {
         writer.writeStartElement(name());
     }
-    writeElementContents(namespacePrefixes, writer, use, messageNamespace);
+    writeElementContents(namespacePrefixes, writer, use, messageNamespace, soapVersion);
     writer.writeEndElement();
 }
 
-void KDSoapValue::writeElementContents(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace) const
+void KDSoapValue::writeElementContents(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, const SoapVersion soapVersion) const
 {
     const QVariant value = this->value();
     const KDSoapValueList list = this->childValues();
@@ -271,16 +271,16 @@ void KDSoapValue::writeElementContents(KDSoapNamespacePrefixes& namespacePrefixe
 
         const bool isArray = !list.arrayType().isEmpty();
         if (isArray) {
-            writer.writeAttribute(KDSoapNamespaceManager::soapEncoding(), QLatin1String("arrayType"), namespacePrefixes.resolve(list.arrayTypeNs(), list.arrayType()) + QLatin1Char('[') + QString::number(list.count()) + QLatin1Char(']'));
+            writer.writeAttribute(KDSoapNamespaceManager::soapEncoding(soapVersion), QLatin1String("arrayType"), namespacePrefixes.resolve(list.arrayTypeNs(), list.arrayType()) + QLatin1Char('[') + QString::number(list.count()) + QLatin1Char(']'));
         }
     }
-    writeChildren(namespacePrefixes, writer, use, messageNamespace, false);
+    writeChildren(namespacePrefixes, writer, use, messageNamespace, false, soapVersion);
 
     if (!value.isNull())
         writer.writeCharacters(variantToTextValue(value, this->typeNs(), this->type()));
 }
 
-void KDSoapValue::writeChildren(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified) const
+void KDSoapValue::writeChildren(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified, const SoapVersion soapVersion) const
 {
     const KDSoapValueList& args = childValues();
     Q_FOREACH(const KDSoapValue& attr, args.attributes()) {
@@ -295,7 +295,7 @@ void KDSoapValue::writeChildren(KDSoapNamespacePrefixes& namespacePrefixes, QXml
     KDSoapValueListIterator it(args);
     while (it.hasNext()) {
         const KDSoapValue& element = it.next();
-        element.writeElement(namespacePrefixes, writer, use, messageNamespace, forceQualified);
+        element.writeElement(namespacePrefixes, writer, use, messageNamespace, forceQualified, soapVersion);
     }
 }
 
@@ -383,16 +383,16 @@ void KDSoapValue::setNamespaceUri(const QString &ns)
     d->m_nameNamespace = ns;
 }
 
-QByteArray KDSoapValue::toXml(KDSoapValue::Use use, const QString& messageNamespace) const
+QByteArray KDSoapValue::toXml(KDSoapValue::Use use, const QString& messageNamespace, const SoapVersion soapVersion) const
 {
     QByteArray data;
     QXmlStreamWriter writer(&data);
     writer.writeStartDocument();
 
     KDSoapNamespacePrefixes namespacePrefixes;
-    namespacePrefixes.writeStandardNamespaces(writer);
+    namespacePrefixes.writeStandardNamespaces(writer, soapVersion);
 
-    writeElement(namespacePrefixes, writer, use, messageNamespace, false);
+    writeElement(namespacePrefixes, writer, use, messageNamespace, false, soapVersion);
     writer.writeEndDocument();
 
     return data;

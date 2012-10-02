@@ -23,6 +23,7 @@
 #define KDSOAPMESSAGEWRITER_P_H
 
 #include "KDSoapMessage.h"
+#include "KDSoapClientInterface.h"
 #include <QtCore/QXmlStreamWriter>
 #include <QtCore/QByteArray>
 #include <QtCore/QString>
@@ -46,7 +47,8 @@ public:
 
     QByteArray messageToXml(const KDSoapMessage& message, const QString& method /*empty in document style*/,
                             const KDSoapHeaders& headers,
-                            const QMap<QString, KDSoapMessage>& persistentHeaders) const;
+                            const QMap<QString, KDSoapMessage>& persistentHeaders,
+                            const SoapVersion soapVersion) const;
 
 private:
     QString m_messageNamespace;

@@ -212,16 +212,16 @@ public:
       EncodedUse  ///< each message part references an abstract type using the \c xsi:type attribute
     };
 
-    QByteArray toXml(Use use = LiteralUse, const QString& messageNamespace = QString()) const;
+    QByteArray toXml(KDSoapValue::Use use = LiteralUse, const QString &messageNamespace = QString(), const SoapVersion soapVersion = SOAP1_1) const;
 
 private:
     // To catch mistakes
     KDSoapValue(QString, QString, QString);
 
     friend class KDSoapMessageWriter;
-    void writeElement(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified) const;
-    void writeElementContents(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace) const;
-    void writeChildren(KDSoapNamespacePrefixes& namespacePrefixes, QXmlStreamWriter& writer, KDSoapValue::Use use, const QString& messageNamespace, bool forceQualified) const;
+    void writeElement(KDSoapNamespacePrefixes &namespacePrefixes, QXmlStreamWriter &writer, KDSoapValue::Use use, const QString &messageNamespace, bool forceQualified, const SoapVersion soapVersion) const;
+    void writeElementContents(KDSoapNamespacePrefixes &namespacePrefixes, QXmlStreamWriter &writer, KDSoapValue::Use use, const QString &messageNamespace, const SoapVersion soapVersion) const;
+    void writeChildren(KDSoapNamespacePrefixes &namespacePrefixes, QXmlStreamWriter &writer, KDSoapValue::Use use, const QString &messageNamespace, bool forceQualified, const SoapVersion soapVersion) const;
 
     class Private;
     QSharedDataPointer<Private> d;
