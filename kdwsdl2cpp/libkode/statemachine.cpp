@@ -97,7 +97,7 @@ Code StateMachine::transitionLogic() const
 
   QMap<QString,Code>::ConstIterator it;
   for ( it = d->mStateMap.constBegin(); it != d->mStateMap.constEnd(); ++it ) {
-    code += QLatin1String("case ") + it.key() + QLatin1Char(':');
+    code += QLatin1String("case ") + QString(it.key()).replace(".", "_") + QLatin1Char(':');
     code.indent();
     code.addBlock( it.value() );
     code += QLatin1String("break;");

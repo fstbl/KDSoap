@@ -295,7 +295,7 @@ void Converter::createSimpleTypeSerializer( KODE::Class& newClass, const XSD::Si
                 code += "switch ( " + variable.name() + " ) {";
                 code.indent();
                 for ( int i = 0; i < enums.count(); ++i ) {
-                    code += "case " + typeName + "::" + escapedEnums[ i ] + ':';
+                    code += "case " + QString(typeName).replace(".", "_") + "::" + escapedEnums[ i ] + ':';
                     code.indent();
                     code += "return QString::fromLatin1(\"" + enums[ i ] + "\");";
                     code.unindent();
@@ -326,7 +326,7 @@ void Converter::createSimpleTypeSerializer( KODE::Class& newClass, const XSD::Si
                 KODE::Code code;
                 code += "static const struct { const char* name; Type value; } s_values[" + QString::number(enums.count()) + "] = {";
                 for ( int i = 0; i < enums.count(); ++i ) {
-                    code += "{ \"" + enums[ i ] + "\", " + typeName + "::" + escapedEnums[ i ] + " }" + (i < enums.count()-1 ? "," : "");
+                    code += "{ \"" + enums[ i ] + "\", " + QString(typeName).replace(".", "_") + "::" + escapedEnums[ i ] + " }" + (i < enums.count()-1 ? "," : "");
                 }
                 code += "};";
                 code += "const QString str = value.toString();";
@@ -340,7 +340,7 @@ void Converter::createSimpleTypeSerializer( KODE::Class& newClass, const XSD::Si
                 code += "}";
                 code.unindent();
                 code += "}";
-                code += "qDebug(\"Unknown enum value '%s' passed to '" + newClass.name() + "'.\", qPrintable(str) );";
+                code += "qDebug(\"Unknown enum value '%s' passed to '" + newClass.name().replace(".", "_") + "'.\", qPrintable(str) );";
                 deserializeFunc.setBody( code );
             }
 
