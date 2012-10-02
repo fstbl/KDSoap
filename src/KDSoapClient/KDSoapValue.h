@@ -29,6 +29,7 @@
 #include <QtCore/QSet>
 #include <QtCore/QVector>
 #include <QtCore/QSharedDataPointer>
+#include <QtCore/QXmlStreamWriter>
 #include "KDSoapGlobal.h"
 
 #ifndef QT_NO_STL
@@ -37,7 +38,6 @@
 
 class KDSoapValueList;
 class KDSoapNamespacePrefixes;
-class QXmlStreamWriter;
 
 /**
  * KDSoapValue represents a value in a SOAP argument list.

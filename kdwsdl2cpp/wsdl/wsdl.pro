@@ -13,6 +13,7 @@ SOURCES = \
    operation.cpp \
    param.cpp \
    part.cpp \
+   policy.cpp \
    port.cpp \
    porttype.cpp \
    service.cpp \

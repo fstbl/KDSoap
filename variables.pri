@@ -10,7 +10,7 @@ solaris-cc:DEFINES += SUN7
 
 win32-msvc*:QMAKE_CXXFLAGS += /GR /EHsc /wd4251
 
-unix:!macx:QMAKE_LFLAGS += -Wl,-no-undefined
+unix:!macx:!aix*:QMAKE_LFLAGS += -Wl,-no-undefined
 
 CONFIG += depend_includepath
 

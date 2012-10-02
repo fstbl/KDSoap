@@ -24,7 +24,7 @@
 #include "KDSoapServerObjectInterface.h"
 #include "KDSoapServerAuthInterface.h"
 #include "KDSoapServer.h"
-#include <KDSoapGlobal.h>
+#include <KDSoapClient/KDSoapGlobal.h>
 #include <KDSoapClient/KDSoapMessage.h>
 #include <KDSoapClient/KDSoapNamespaceManager.h>
 #include <KDSoapClient/KDSoapMessageReader_p.h>
