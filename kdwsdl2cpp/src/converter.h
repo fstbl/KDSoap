@@ -60,7 +60,7 @@ class Converter
 
     // Client Stub
     void generateToHeader(KODE::Code& code);
-    void generateActionHeader(KODE::Code& code, const QString& operationName);
+    void generateActionHeader(KODE::Code& code, const QString& operationName, const QString& soapAction);
     void generateSecurityHeader(KODE::Code& code);
     bool convertClientService();
     bool convertClientCall( const Operation&, const Binding&, KODE::Class& );

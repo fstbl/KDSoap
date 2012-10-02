@@ -61,10 +61,36 @@ QName Param::message() const
   return mMessage;
 }
 
+void Param::setSoapAction( const QString &soapAction )
+{
+  mSoapAction = soapAction;
+}
+
+QString Param::soapAction() const
+{
+  return mSoapAction;
+}
+
 void Param::loadXML( ParserContext *context, const QDomElement &element )
 {
   mName = element.attribute( QLatin1String("name") );
   mMessage = element.attribute( QLatin1String("message") );
+  mSoapAction = element.attribute( QLatin1String("soapAction") );
+  if ( mSoapAction == "" ) {
+    for ( int i=0; i<element.attributes().length(); i++ ) {
+      QStringList namespaceName = element.attributes().item(i).nodeName().split(":");
+      QString localName;
+      if ( namespaceName.length() > 1 ) {
+        localName = namespaceName[1];
+      } else {
+        localName = namespaceName[0];
+      }
+      if( localName == "Action" ) {
+        mSoapAction = element.attributes().item(i).nodeValue();
+      }
+    }
+  }
+  
   if ( mMessage.isEmpty() )
     context->messageHandler()->warning( QLatin1String("Param: 'message' required") );
   else {

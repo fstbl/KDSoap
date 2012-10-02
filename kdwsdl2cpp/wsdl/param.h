@@ -49,12 +49,16 @@ class KWSDL_EXPORT Param : public Element
     void setMessage( const QName &message );
     QName message() const;
 
+    void setSoapAction( const QString &soapAction );
+    QString soapAction() const;
+
     void loadXML( ParserContext *context, const QDomElement &element );
     void saveXML( ParserContext *context, const QString &name, QDomDocument &document, QDomElement &parent ) const;
 
   private:
     QString mName;
     QName mMessage;
+    QString mSoapAction;
 };
 
 }

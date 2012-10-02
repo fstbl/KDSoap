@@ -73,11 +73,14 @@ void Converter::generateToHeader(KODE::Code& code)
     code += "clientInterface()->setHeader(QString::fromLatin1(\"to\"), toHeader);";
 }
 
-void Converter::generateActionHeader(KODE::Code& code, const QString& operationName)
+void Converter::generateActionHeader(KODE::Code& code, const QString& operationName, const QString& soapAction)
 {
 	code += "KDSoapMessage actionHeader;";
 	code += "actionHeader.setUse(KDSoapMessage::LiteralUse);";
-	code += "KDSoapValue actionValue(QString::fromLatin1(\"Action\"), QVariant(QString::fromLatin1(\""+operationName+"\")), QString::fromLatin1(\"wsa5\"));";
+	if(soapAction != "")
+		code += "KDSoapValue actionValue(QString::fromLatin1(\"Action\"), QVariant(QString::fromLatin1(\""+soapAction+"\")), QString::fromLatin1(\"wsa5\"));";
+	else
+		code += "KDSoapValue actionValue(QString::fromLatin1(\"Action\"), QVariant(QString::fromLatin1(\""+operationName+"\")), QString::fromLatin1(\"wsa5\"));";
 	code += "actionValue.setQualified(true);";
 	code += "actionValue.setNamespaceUri(QString::fromLatin1(\"http://www.w3.org/2005/08/addressing\"));";
 	code += "actionHeader.childValues().append(actionValue);";
@@ -589,7 +592,6 @@ KODE::Code Converter::deserializeRetVal(const KWSDL::Part& part, const QString& 
     return code;
 }
 
-//TODO: Add action header.
 // Generate synchronous call
 bool Converter::convertClientCall( const Operation &operation, const Binding &binding, KODE::Class &newClass )
 {
@@ -600,11 +602,14 @@ bool Converter::convertClientCall( const Operation &operation, const Binding &bi
   const Message outputMessage = mWSDL.findMessage( operation.output().message() );
   clientAddArguments( callFunc, inputMessage, newClass, operation, binding );
   KODE::Code code;
-  generateActionHeader( code, operation.name() );
+  generateActionHeader( code, operation.name(), operation.input().soapAction() );
   const bool hasAction = clientAddAction( code, binding, operation.name() );
   clientGenerateMessage( code, binding, inputMessage, operation );
   QString callLine = QLatin1String("d_ptr->m_lastReply = clientInterface()->call(QLatin1String(\"") + operation.name() + QLatin1String("\"), message");
-  if (hasAction) {
+  if (operation.input().soapAction() != "") {
+      code += QLatin1String("const QString soapAction = QString::fromLatin1(\"") + operation.input().soapAction() + QLatin1String("\");");
+      callLine += QLatin1String(", soapAction");
+  } else if (hasAction) {
       callLine += QLatin1String(", action");
   }
   callLine += QLatin1String(");");
@@ -693,12 +698,15 @@ void Converter::convertClientInputMessage( const Operation &operation,
   const Message message = mWSDL.findMessage( operation.input().message() );
   clientAddArguments( asyncFunc, message, newClass, operation, binding );
   KODE::Code code;
-  generateActionHeader( code, operationName );
+  generateActionHeader( code, operationName, operation.input().soapAction() );
   const bool hasAction = clientAddAction( code, binding, operation.name() );
   clientGenerateMessage( code, binding, message, operation );
 
   QString callLine = QLatin1String("KDSoapPendingCall pendingCall = clientInterface()->asyncCall(QLatin1String(\"") + operationName + QLatin1String("\"), message");
-  if (hasAction) {
+  if (operation.input().soapAction() != "") {
+      code += QLatin1String("const QString soapAction = QString::fromLatin1(\"") + operation.input().soapAction() + QLatin1String("\");");
+      callLine += QLatin1String(", soapAction");
+  } else if (hasAction) {
       callLine += QLatin1String(", action");
   }
   callLine += QLatin1String(");");

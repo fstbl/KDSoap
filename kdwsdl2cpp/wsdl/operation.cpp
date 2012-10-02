@@ -129,7 +129,7 @@ void Operation::loadXML( ParserContext *context, const QDomElement &element )
         Fault fault( nameSpace() );
         fault.loadXML( context, child );
         mFaults.append( fault );
-      } else if ( tagName.localName() == QLatin1String("documentation")) {
+      } else if ( tagName.localName() == QLatin1String("documentation") ) {
         QString text = child.firstChild().toText().data().trimmed();
         setDocumentation(text);
       } else {

@@ -40,6 +40,9 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
 {
     QByteArray data;
     QXmlStreamWriter writer(&data);
+    if (qgetenv("KDSOAP_DEBUG").toInt()) {
+        writer.setAutoFormatting(true);
+    }
     writer.writeStartDocument();
 
     KDSoapNamespacePrefixes namespacePrefixes;
