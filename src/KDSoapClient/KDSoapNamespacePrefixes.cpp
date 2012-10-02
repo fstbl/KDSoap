@@ -28,6 +28,9 @@ void KDSoapNamespacePrefixes::writeStandardNamespaces(QXmlStreamWriter &writer, 
     writeNamespace(writer, KDSoapNamespaceManager::soapEncoding(soapVersion), QLatin1String("soap-enc"));
     writeNamespace(writer, KDSoapNamespaceManager::xmlSchema1999(), QLatin1String("xsd"));
     writeNamespace(writer, KDSoapNamespaceManager::xmlSchemaInstance1999(), QLatin1String("xsi"));
+    writeNamespace(writer, QString::fromLatin1("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"), QLatin1String("wsse"));
+    writeNamespace(writer, QString::fromLatin1("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"), QLatin1String("wsu"));
+    writeNamespace(writer, QString::fromLatin1("http://www.w3.org/2005/08/addressing"), QLatin1String("wsa5"));
 
     // Also insert known variants
     insert(KDSoapNamespaceManager::xmlSchema2001(), QString::fromLatin1("xsd"));
