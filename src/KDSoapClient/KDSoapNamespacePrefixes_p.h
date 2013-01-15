@@ -26,6 +26,8 @@
 #include <QtCore/QXmlStreamWriter>
 #include "KDSoapClientInterface.h"
 
+#include "KDSoapClientInterface.h"
+
 class KDSoapNamespacePrefixes : public QMap<QString /*ns*/, QString /*prefix*/>
 {
 public:

@@ -1,28 +1,51 @@
 General:
 ========
+* KDSoap now supports both Qt4 and Qt5
+* Added support for cross-compilation with Qt5's qmake
+  (so that kdwsdl2cpp is compiled as a host tool)
+  Usage: ./configure [...] -hostqmake /opt/host-qt4/bin/qmake
 * Fix compilation with custom build systems who do not set include paths to QtCore and QtNetwork.
 Similarly, do not requiring including the KDSoapClient and KDSoapServer subdirs, only the toplevel.
+* More steps towards SOAP-1.2 support (different namespaces)
 
 Client-side:
 ============
 * Add support for return (output) headers (in async calls and jobs) (SOAP-45).
   Documented how to access them in sync calls (no deserialization possible).
+* Generate synchronous methods for one-way operations too
+* Add setSslConfiguration(QSslConfiguration), for custom SSL configuration on a
+  given KDSoapClientInterface.
+* Add class KDSoapSslHandler for notification and handling of SSL errors.
 * Fix namespace of the main element in messages being sent, the NS from the schema
   must be used rather than the NS from the WSDL, when both exist (github issue4).
 * Fix assert when the response message is empty (github issue1).
+* Set attribute xsi:nil="true" in empty elements, as per http://www.w3.org/TR/xmlschema-1/#xsi_nil
+* Fix missing setters for headers, when generating multiple classes
+* Fix job classes to be per-binding, when multiple bindings are generated.
 
 Server-side:
 ============
 * Implement support for HTTP Basic authentication, see KDSoapServerAuthInterface.
+* Implement support for RPC mode
 * Fix element name of the response element to be the one defined in the WSDL (SOAP-32).
 * Added closeLogFile() so that log files can be rotated (SOAP-33).
 * Support for HTTP GET requests for file download (SOAP-29_3).
 * Support for SOAP requests on different paths than the default one (SOAP-8).
 * Fix generated code when SOAP-1.1 and SOAP-1.2 bindings are present
   (fix compilation error, and set version to SOAP_1_2 in the 1.2 binding) (SOAP-44).
+* Fix handling of requests in RPC mode.
 * Fix small memory leak if the device returned from processFileRequest can not be accessed (SOAP-48).
 * Clean incoming path recieved via HTTP from "./" and "../" (SOAP-49).
+* Add ability to set custom ssl configuration for new connections.
 
 Code generator changes, applying to both client and server side:
 ================================================================
-* 
+* Support for SOAP-1.2 encoding namespace (http://www.w3.org/2003/05/soap-encoding)
+* Improve parsing of soap-enc:array restrictions, to use the correct element names, when specified
+* Fix parsing of <soap:body use="encoded">, which sometimes didn't encode the parameters.
+* Fix generation of classes with nested namespaces (A::B::C)
+* Fix disappearing classes when the same file has classes with the same
+   name in different namespaces.
+* Fix hashing of QNames
+* Fix conflict between complex type "Foo" and anonymous complex type "foo",
+   both leading to a C++ class called "Foo".

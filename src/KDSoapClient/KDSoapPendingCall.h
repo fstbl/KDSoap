@@ -24,10 +24,12 @@
 
 #include <QtCore/QExplicitlySharedDataPointer>
 #include "KDSoapMessage.h"
+QT_BEGIN_NAMESPACE
 
 class QHttpMultiPart;
 class QNetworkReply;
 class QBuffer;
+QT_END_NAMESPACE
 class KDSoapPendingCallWatcher;
 
 /**

@@ -43,6 +43,7 @@ class KDSOAP_EXPORT KDSoapMessageWriter
 public:
     KDSoapMessageWriter();
 
+    void setVersion(SoapVersion version);
     void setMessageNamespace(const QString& ns);
 
     QByteArray messageToXml(const KDSoapMessage& message, const QString& method /*empty in document style*/,
@@ -52,6 +53,8 @@ public:
 
 private:
     QString m_messageNamespace;
+    SoapVersion m_version;
+
 };
 
 #endif // KDSOAPMESSAGEWRITER_P_H

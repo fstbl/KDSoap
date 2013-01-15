@@ -24,8 +24,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -47,10 +47,13 @@ void AutoTestSoap12::test()
     service12.version();
 
     const QByteArray expectedData = QByteArray(xmlEnvBegin) + "><soap:Body>"
-    "<n1:version xmlns:n1=\"http://kdab.com/test/\"/>"
+    "<n1:version xmlns:n1=\"http://kdab.com/test/\" xsi:nil=\"true\"/>"
     "</soap:Body></soap:Envelope>";
 
-    QVERIFY(xmlBufferCompare(server.receivedData(), expectedData));
+    QByteArray expectedData12 = expectedData;
+    expectedData12.replace("http://schemas.xmlsoap.org/soap/envelope/", "http://www.w3.org/2003/05/soap-envelope");
+    expectedData12.replace("http://schemas.xmlsoap.org/soap/encoding/", "http://www.w3.org/2003/05/soap-encoding");
+    QVERIFY(xmlBufferCompare(server.receivedData(), expectedData12));
 
     Test::TestSoap service11;
     service11.setEndPoint(server.endPoint());

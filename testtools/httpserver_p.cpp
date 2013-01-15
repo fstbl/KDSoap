@@ -162,7 +162,9 @@ bool KDSoapUnitTestHelpers::setSslConfiguration()
         return false;
     }
     QSslCertificate cert(&certFile);
-    if (!cert.isValid()) {
+    const QDateTime currentTime = QDateTime::currentDateTime();
+    if (cert.effectiveDate() > currentTime
+            || cert.expiryDate() < currentTime) {
         qDebug() << "Certificate" << certFile.fileName() << "is not valid";
         qDebug() << "It is valid from" << cert.effectiveDate() << "to" << cert.expiryDate();
         return false;
@@ -192,7 +194,12 @@ public:
             return nextPendingConnection();
         }
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+    virtual void incomingConnection(qintptr socketDescriptor)
+#else
     virtual void incomingConnection(int socketDescriptor)
+#endif
     {
 #ifndef QT_NO_OPENSSL
         if (doSsl) {
@@ -215,6 +222,7 @@ public:
 #endif
             QTcpServer::incomingConnection(socketDescriptor);
     }
+    void disableSsl() { doSsl = false; }
 private slots:
 #ifndef QT_NO_OPENSSL
     void slotSslErrors(const QList<QSslError>& errors)
@@ -223,7 +231,7 @@ private slots:
     }
 #endif
 private:
-    const bool doSsl;
+    bool doSsl;
     QTcpSocket* sslSocket;
 };
 
@@ -272,11 +280,17 @@ static HeadersMap parseHeaders(const QByteArray& headerData) {
     return headersMap;
 }
 
+
+void HttpServerThread::disableSsl()
+{
+    m_server->disableSsl();
+}
+
 void HttpServerThread::run()
 {
-    BlockingHttpServer server(m_features & Ssl);
-    server.listen();
-    m_port = server.serverPort();
+    m_server = new BlockingHttpServer(m_features & Ssl);
+    m_server->listen();
+    m_port = m_server->serverPort();
     m_ready.release();
 
     const bool doDebug = qgetenv("KDSOAP_DEBUG").toInt();
@@ -285,7 +299,7 @@ void HttpServerThread::run()
         qDebug() << "HttpServerThread listening on port" << m_port;
 
     // Wait for first connection (we'll wait for further ones inside the loop)
-    QTcpSocket *clientSocket = server.waitForNextConnectionSocket();
+    QTcpSocket *clientSocket = m_server->waitForNextConnectionSocket();
     Q_ASSERT(clientSocket);
 
     Q_FOREVER {
@@ -300,7 +314,7 @@ void HttpServerThread::run()
                 if (doDebug) {
                     qDebug() << "Waiting for next connection...";
                 }
-                clientSocket = server.waitForNextConnectionSocket();
+                clientSocket = m_server->waitForNextConnectionSocket();
                 Q_ASSERT(clientSocket);
                 continue; // go to "waitForReadyRead"
             } else {
@@ -403,6 +417,7 @@ void HttpServerThread::run()
     }
     // all done...
     delete clientSocket;
+    delete m_server;
     if (doDebug) {
         qDebug() << "HttpServerThread terminated";
     }

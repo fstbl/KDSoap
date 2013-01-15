@@ -25,6 +25,7 @@
 #include "KDSoapServerGlobal.h"
 #include <KDSoapClient/KDSoapMessage.h>
 #include <QtNetwork/QTcpServer>
+#include <QtNetwork/QSslConfiguration>
 
 class KDSoapThreadPool;
 
@@ -240,6 +241,19 @@ public:
      */
     QString wsdlPathInUrl() const;
 
+#ifndef QT_NO_SSL
+    /**
+     * \returns the ssl configuration for this server
+     */
+    QSslConfiguration sslConfiguration() const;
+
+    /**
+     * Sets the ssl configuration to use for new server connections
+     * \param config ssl configuration to use for new connections
+     */
+    void setSslConfiguration(const QSslConfiguration &config);
+#endif
+
 public Q_SLOTS:
     /**
      * Temporarily suspend (do not listen to incoming connections, and close all
@@ -260,7 +274,11 @@ Q_SIGNALS:
     void connectionRejected();
 
 protected:
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+    /*! \reimp \internal */ void incomingConnection(qintptr socketDescriptor);
+#else
     /*! \reimp \internal */ void incomingConnection(int socketDescriptor);
+#endif
 
 private:
     friend class KDSoapServerSocket;

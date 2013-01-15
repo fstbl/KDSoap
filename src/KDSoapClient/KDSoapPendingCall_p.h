@@ -26,14 +26,12 @@
 #include <QBuffer>
 #include <QXmlStreamReader>
 #include "KDSoapMessage.h"
-#if QT_VERSION >= 0x040600
-#include <QWeakPointer>
-#else
 #include <QPointer>
-#endif
 
+QT_BEGIN_NAMESPACE
 class QHttpMultiPart;
 class QNetworkReply;
+QT_END_NAMESPACE
 class KDSoapValue;
 
 class KDSoapPendingCall::Private : public QSharedData
@@ -54,11 +52,7 @@ public:
 
     // Can be deleted under us if the KDSoapClientInterface (and its QNetworkAccessManager)
     // are deleted before the KDSoapPendingCall.
-#if QT_VERSION >= 0x040600
-    QWeakPointer<QNetworkReply> reply;
-#else
     QPointer<QNetworkReply> reply;
-#endif
     QBuffer* buffer;
     QHttpMultiPart* mimeBuffer;
     KDSoapMessage replyMessage;

@@ -1,8 +1,42 @@
 TEMPLATE = subdirs
-SUBDIRS  = src kdwsdl2cpp features
-unittests: SUBDIRS += testtools unittests
-unittests: SUBDIRS += examples
-CONFIG   += ordered
+crosscompiling {
+    module_kdwsdl2cpp.commands =
+    module_kdwsdl2cpp.target = module_kdwsdl2cpp
+    module_kdwsdl2cpp-make_default.commands = cd kdwsdl2cpp && $(MAKE)
+    module_kdwsdl2cpp-make_default.target = module_kdwsdl2cpp-make_default
+    module_kdwsdl2cpp-make_first.commands = cd kdwsdl2cpp && $(MAKE) first
+    module_kdwsdl2cpp-make_first.target = module_kdwsdl2cpp-make_first
+    module_kdwsdl2cpp-clean.commands = cd kdwsdl2cpp && $(MAKE) clean
+    module_kdwsdl2cpp-clean.target = module_kdwsdl2cpp-clean
+    module_kdwsdl2cpp-distclean.commands = cd kdwsdl2cpp && $(MAKE) distclean
+    module_kdwsdl2cpp-distclean.target = module_kdwsdl2cpp-distclean
+    module_kdwsdl2cpp-all.commands = cd kdwsdl2cpp && $(MAKE) all
+    module_kdwsdl2cpp-all.target = module_kdwsdl2cpp-all
+    module_kdwsdl2cpp-install_subtargets.commands = cd kdwsdl2cpp && $(MAKE) install
+    module_kdwsdl2cpp-install_subtargets.target = module_kdwsdl2cpp-install_subtargets
+    module_kdwsdl2cpp-uninstall_subtargets.commands = cd kdwsdl2cpp && $(MAKE) uninstall
+    module_kdwsdl2cpp-uninstall_subtargets.target = module_kdwsdl2cpp-uninstall_subtargets
+    QMAKE_EXTRA_TARGETS += module_kdwsdl2cpp module_kdwsdl2cpp-make_default module_kdwsdl2cpp-make_first module_kdwsdl2cpp-clean module_kdwsdl2cpp-all module_kdwsdl2cpp-distclean module_kdwsdl2cpp-install_subtargets module_kdwsdl2cpp-uninstall_subtargets
+} else {
+    module_kdwsdl2cpp.subdir = kdwsdl2cpp
+    SUBDIRS += module_kdwsdl2cpp
+}
+
+module_src.subdir = src
+module_src.target = module-src
+module_src.depends = module_kdwsdl2cpp
+module_testtools.subdir = testtools
+module_testtools.depends = module_src
+module_include.subdir = include
+module_include.depends = module_src
+module_unittests.subdir = unittests
+module_unittests.depends = module_src module_testtools
+module_examples.subdir = examples
+module_examples.depends = module_src
+
+SUBDIRS += module_src features module_include
+unittests: SUBDIRS += module_testtools module_unittests
+SUBDIRS += module_examples
 MAJOR_VERSION = 1 ### extract from $$VERSION
 
 unix:DEFAULT_INSTALL_PREFIX = /usr/local/KDAB/KDSoap-$$VERSION
@@ -37,8 +71,7 @@ KDSOAPSERVERLIB = kdsoap-server$$DEBUG_SUFFIX$$VERSION_SUFFIX
 message(Install prefix is $$INSTALL_PREFIX)
 message(This is KD Soap version $$VERSION)
 
-# These files are in the build directory (Because "somecommand >> somefile" puts them there)
-CONFQMAKE_CACHE = "$${OUT_PWD}/.confqmake.cache"
+# This file is in the build directory (because "somecommand >> somefile" puts it there)
 QMAKE_CACHE = "$${OUT_PWD}/.qmake.cache"
 
 # Create a .qmake.cache file
@@ -47,7 +80,7 @@ unix:MESSAGE = '\\'$$LITERAL_HASH\\' KDAB qmake cache file: following lines auto
 
 system('echo $${MESSAGE} > $${QMAKE_CACHE}')
 
-TMP_SOURCE_DIR = $${IN_PWD}
+TMP_SOURCE_DIR = $${PWD}
 TMP_BUILD_DIR = $${OUT_PWD}
 system('echo TOP_SOURCE_DIR=$${TMP_SOURCE_DIR} >> $${QMAKE_CACHE}')
 system('echo TOP_BUILD_DIR=$${TMP_BUILD_DIR} >> $${QMAKE_CACHE}')

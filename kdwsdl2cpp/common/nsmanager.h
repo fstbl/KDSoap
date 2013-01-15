@@ -27,7 +27,9 @@
 
 #include <common/qname.h>
 #include <kode_export.h>
+QT_BEGIN_NAMESPACE
 class QDomElement;
+QT_END_NAMESPACE
 class ParserContext;
 
 class KXMLCOMMON_EXPORT NSManager
@@ -59,11 +61,11 @@ class KXMLCOMMON_EXPORT NSManager
 
     void reset();
 
-    QString schemaPrefix() const;
-    QString schemaInstancePrefix() const;
-    QString soapEncPrefix() const;
-
     void dump() const;
+
+    // Repository of namespaces
+    static QStringList soapEncNamespaces();
+    static QStringList soapNamespaces();
 
   private:
     void splitName( const QString &qname, QString &prefix, QString &localname ) const;

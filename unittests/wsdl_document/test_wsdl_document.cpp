@@ -34,6 +34,7 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #ifndef QT_NO_OPENSSL
+#include <KDSoapSslHandler.h>
 #include <QSslSocket>
 #endif
 
@@ -44,16 +45,16 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
 static const char* xmlBegin = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 static const char* xmlNamespaces = "xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
     " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-    " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-    " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\"";
+    " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+    " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
 static const char* myWsdlNamespace = "http://www.kdab.com/xml/MyWsdl/";
 
 class WsdlDocumentTest : public QObject
@@ -140,8 +141,8 @@ private:
         "<kdab:SessionElement sessionId=\"returned_id\"/>"
         "</soap:Header>"
         "<soap:Body>"
-                "<kdab:addEmployeeResponse xmlns:kdab=\"http://www.kdab.com/xml/MyWsdl/\">466F6F</kdab:addEmployeeResponse>"
-                " </soap:Body>" + xmlEnvEnd;
+        "<kdab:addEmployeeResponse xmlns:kdab=\"http://www.kdab.com/xml/MyWsdl/\">466F6F</kdab:addEmployeeResponse>" // "Foo"
+        " </soap:Body>" + xmlEnvEnd;
     }
 
 private Q_SLOTS:
@@ -149,6 +150,10 @@ private Q_SLOTS:
     void initTestCase()
     {
         qRegisterMetaType<KDSoapMessage>();
+#ifndef QT_NO_OPENSSL
+        qRegisterMetaType< QList<QSslError> >();
+        qRegisterMetaType<KDSoapSslHandler *>();
+#endif
     }
 
     // Using wsdl-generated code, make a call, and check the xml that was sent,
@@ -219,10 +224,65 @@ private Q_SLOTS:
     }
 
 #ifndef QT_NO_OPENSSL
+    void testSslError()
+    {
+        if (!QSslSocket::supportsSsl())
+            return; // see above
+        // Use SSL on the server, without adding the CA certificate (done by setSslConfiguration())
+        HttpServerThread server(addEmployeeResponse(), HttpServerThread::Ssl);
+        MyWsdlDocument service;
+        service.setEndPoint(server.endPoint());
+        QVERIFY(server.endPoint().startsWith(QLatin1String("https")));
+        QSignalSpy sslErrorsSpy(service.clientInterface()->sslHandler(), SIGNAL(sslErrors(KDSoapSslHandler*, QList<QSslError>)));
+        // We need to use async API to test sslHandler, see documentation there.
+        ListEmployeesJob *job = new ListEmployeesJob(&service);
+        connect(job, SIGNAL(finished(KDSoapJob*)), this, SLOT(slotListEmployeesJobFinished(KDSoapJob*)));
+        job->start();
+        m_eventLoop.exec();
+        // Disable SSL so that termination can happen normally (do it asap, in case of failure below)
+        server.disableSsl();
+
+        QVERIFY2(job->faultAsString().contains(QLatin1String("SSL handshake failed")), qPrintable(service.lastError()));
+        QCOMPARE(sslErrorsSpy.count(), 1);
+#ifdef Q_OS_UNIX // Windows seems to get "Unknown error". Bah...
+        const QList<QSslError> errors = sslErrorsSpy.at(0).at(1).value<QList<QSslError> >();
+        QCOMPARE((int)errors.at(0).error(), (int)QSslError::UnableToGetLocalIssuerCertificate);
+        QCOMPARE((int)errors.at(1).error(), (int)QSslError::CertificateUntrusted);
+        QCOMPARE((int)errors.at(2).error(), (int)QSslError::UnableToVerifyFirstCertificate);
+#endif
+    }
+
+    void testSslErrorHandled()
+    {
+        if (!QSslSocket::supportsSsl())
+            return; // see above
+        // Use SSL on the server, without adding the CA certificate (done by setSslConfiguration())
+        HttpServerThread server(addEmployeeResponse(), HttpServerThread::Ssl);
+        MyWsdlDocument service;
+        service.setEndPoint(server.endPoint());
+        connect(service.clientInterface()->sslHandler(), SIGNAL(sslErrors(KDSoapSslHandler*, QList<QSslError>)),
+                this, SLOT(slotSslHandlerErrors(KDSoapSslHandler*, QList<QSslError>)));
+        AddEmployeeJob *job = new AddEmployeeJob(&service);
+        job->setParameters(addEmployeeParameters());
+        connect(job, SIGNAL(finished(KDSoapJob*)), this, SLOT(slotAddEmployeeJobFinished(KDSoapJob*)));
+        job->start();
+        m_eventLoop.exec();
+        // Disable SSL so that termination can happen normally (do it asap, in case of failure below)
+        server.disableSsl();
+        QCOMPARE(m_errors.count(), 3);
+        QCOMPARE(job->faultAsString(), QString());
+        QCOMPARE(QString::fromLatin1(job->resultParameters().constData()), QString::fromLatin1("Foo"));
+    }
+
+
     void testMyWsdlSSL()
     {
         if (!QSslSocket::supportsSsl()) {
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+            QSKIP("No SSL support on this machine, check that ssleay.so/ssleay32.dll is installed");
+#else
             QSKIP("No SSL support on this machine, check that ssleay.so/ssleay32.dll is installed", SkipAll);
+#endif
         }
 
 #ifndef QT_NO_SSLSOCKET
@@ -263,6 +323,7 @@ private Q_SLOTS:
         QCOMPARE(QString::fromUtf8(server.receivedData().constData()), QString::fromUtf8(expectedRequestXml.constData()));
         QVERIFY(server.receivedHeaders().contains("SoapAction: \"http://www.kdab.com/AddEmployee\""));
     }
+
 #endif
 
     void testSimpleType()
@@ -364,7 +425,7 @@ private Q_SLOTS:
         const QByteArray expectedRequestXml =
             QByteArray(xmlEnvBegin) + ">"
             "<soap:Body>"
-            "<n1:getCountries xmlns:n1=\"http://namesservice.thomas_bayer.com/\"/>"
+            "<n1:getCountries xmlns:n1=\"http://namesservice.thomas_bayer.com/\" xsi:nil=\"true\"/>"
             "</soap:Body>" + xmlEnvEnd;
         QVERIFY(xmlBufferCompare(server.receivedData(), expectedRequestXml));
 
@@ -405,13 +466,13 @@ private Q_SLOTS:
         service.setEndPoint(server.endPoint());
 
         KDAB__AnyType anyType;
-        anyType.setInput(KDSoapValue(QString::fromLatin1("foo"), QString::fromLatin1("Value"), KDSoapNamespaceManager::xmlSchema1999(), QString::fromLatin1("string")));
+        anyType.setInput(KDSoapValue(QString::fromLatin1("foo"), QString::fromLatin1("Value"), KDSoapNamespaceManager::xmlSchema2001(), QString::fromLatin1("string")));
         KDSoapValueList schemaChildValues;
         KDSoapValue testVal(QLatin1String("test"), QString::fromLatin1("input"));
-        testVal.setNamespaceUri(KDSoapNamespaceManager::xmlSchema1999());
+        testVal.setNamespaceUri(KDSoapNamespaceManager::xmlSchema2001());
         schemaChildValues.append(testVal);
         KDSoapValue inputSchema(QLatin1String("schema"), schemaChildValues);
-        inputSchema.setNamespaceUri(KDSoapNamespaceManager::xmlSchema1999());
+        inputSchema.setNamespaceUri(KDSoapNamespaceManager::xmlSchema2001());
         anyType.setSchema(inputSchema);
         const KDAB__AnyTypeResponse response = service.testAnyType(anyType);
         const QList<KDSoapValue> values = response._return();
@@ -436,14 +497,14 @@ private Q_SLOTS:
 
         const KDSoapValue schema = response.schema();
         QCOMPARE(schema.name(), QString::fromLatin1("schema"));
-        QCOMPARE(schema.namespaceUri(), KDSoapNamespaceManager::xmlSchema1999());
+        QCOMPARE(schema.namespaceUri(), KDSoapNamespaceManager::xmlSchema2001());
         const QByteArray expectedResponseSchemaXml =
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                 "<xsd:schema"
                 " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
                 " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-                " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-                " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+                " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+                " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
                 ">"
                 "<xsd:test>response</xsd:test>"
                 "</xsd:schema>";
@@ -508,10 +569,29 @@ public slots:
         //AddEmployeeJob* addJob = static_cast<AddEmployeeJob *>(job);
         m_eventLoop.quit();
     }
+    void slotListEmployeesJobFinished(KDSoapJob*)
+    {
+        m_eventLoop.quit();
+    }
+
+#ifndef QT_NO_OPENSSL
+    void slotSslHandlerErrors(KDSoapSslHandler* handler, const QList<QSslError>& errors)
+    {
+        // This is just for testing error handling. Don't write this in your actual code...
+#ifdef Q_OS_UNIX // Windows seems to get "Unknown error". Bah...
+        if (errors.at(0).error() == QSslError::UnableToGetLocalIssuerCertificate)
+#endif
+            handler->ignoreSslErrors();
+        m_errors = errors;
+    }
+#endif
 
 private:
     QEventLoop m_eventLoop;
     KDSoapMessage m_returnMessage;
+#ifndef QT_NO_OPENSSL
+    QList<QSslError> m_errors;
+#endif
 
     int m_expectedDelayedCalls;
     QList<QByteArray> m_delayedData;
@@ -622,6 +702,9 @@ public:
     void listEmployees() {
         m_lastMethodCalled = QLatin1String("listEmployees");
     }
+    void heartbeat() {
+        m_lastMethodCalled = QLatin1String("heartbeat");
+    }
 
     KDAB__AnyTypeResponse testAnyType( const KDAB__AnyType& parameters ) {
         KDAB__AnyTypeResponse response;
@@ -703,60 +786,14 @@ public:
     virtual QObject* createServerObject() { m_lastServerObject = new DocServerObject; return m_lastServerObject; }
 
     DocServerObject* lastServerObject() { return m_lastServerObject; }
-Q_SIGNALS:
-    void releaseSemaphore();
-
-public Q_SLOTS:
-    void quit() { thread()->quit(); }
 
 private:
     DocServerObject* m_lastServerObject; // only for unittest purposes
 };
 
-// We need to do the listening and socket handling in a separate thread,
-// so that the main thread can use synchronous calls. Note that this is
-// really specific to unit tests and doesn't need to be done in a real
-// KDSoap-based server.
-class DocServerThread : public QThread
-{
-    Q_OBJECT
-public:
-    DocServerThread() {}
-    ~DocServerThread() {
-        // helgrind says don't call quit() here (Qt bug?)
-        if (m_pServer)
-            QMetaObject::invokeMethod(m_pServer, "quit");
-        wait();
-    }
-    DocServer* startThread() {
-        start();
-        m_semaphore.acquire(); // wait for init to be done
-        return m_pServer;
-    }
-
-protected:
-    void run() {
-        DocServer server;
-        if (server.listen())
-            m_pServer = &server;
-        connect(&server, SIGNAL(releaseSemaphore()), this, SLOT(slotReleaseSemaphore()), Qt::DirectConnection);
-        m_semaphore.release();
-        exec();
-        m_pServer = 0;
-    }
-private Q_SLOTS:
-    void slotReleaseSemaphore() {
-        m_semaphore.release();
-    }
-
-private:
-    QSemaphore m_semaphore;
-    DocServer* m_pServer;
-};
-
 void WsdlDocumentTest::testServerAddEmployee()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
@@ -765,7 +802,7 @@ void WsdlDocumentTest::testServerAddEmployee()
     QVERIFY(server->lastServerObject());
     const QByteArray expectedResponseXml =
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                "<n1:addEmployeeMyResponse xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\" xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" xmlns:n1=\"http://www.kdab.com/xml/MyWsdl/\">"
+                "<n1:addEmployeeMyResponse xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:n1=\"http://www.kdab.com/xml/MyWsdl/\">"
                 "6164646564204461766964204661757265"
                 "</n1:addEmployeeMyResponse>\n";
     //qDebug() << server->lastServerObject() << "response name" << server->lastServerObject()->m_response.name();
@@ -782,7 +819,7 @@ void WsdlDocumentTest::testServerAddEmployee()
 
 void WsdlDocumentTest::testServerAddEmployeeJob()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
@@ -801,14 +838,14 @@ void WsdlDocumentTest::testServerAddEmployeeJob()
 }
 
 static QByteArray rawCountryMessage() {
-    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\" xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><soap:Body><n1:getEmployeeCountry xmlns:n1=\"http://www.kdab.com/xml/MyWsdl/\">"
+    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><soap:Body><n1:getEmployeeCountry xmlns:n1=\"http://www.kdab.com/xml/MyWsdl/\">"
     "<employeeName>David</employeeName>"
     "</n1:getEmployeeCountry></soap:Body></soap:Envelope>";
 }
 
 void WsdlDocumentTest::testServerPostByHand()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     QUrl url(server->endPoint());
@@ -822,7 +859,7 @@ void WsdlDocumentTest::testServerPostByHand()
     connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
     loop.exec();
     const QByteArray response = reply->readAll();
-    const QByteArray expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\" xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\" soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
+    const QByteArray expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\">"
     "<soap:Body>"
     "<n1:EmployeeCountryResponse xmlns:n1=\"http://www.kdab.com/xml/MyWsdl/\">"
       "<n1:employeeCountry>France</n1:employeeCountry>"
@@ -834,11 +871,12 @@ void WsdlDocumentTest::testServerPostByHand()
 
 void WsdlDocumentTest::testServerEmptyArgs()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
     service.setEndPoint(server->endPoint());
+    service.heartbeat(); // ensure the method is generated
     service.listEmployees();
     QVERIFY(server->lastServerObject());
     QCOMPARE(server->lastServerObject()->m_lastMethodCalled, QString::fromLatin1("listEmployees"));
@@ -847,7 +885,7 @@ void WsdlDocumentTest::testServerEmptyArgs()
 
 void WsdlDocumentTest::testServerFault() // test the error signals emitted on error, in async calls
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
@@ -868,7 +906,7 @@ void WsdlDocumentTest::testServerFault() // test the error signals emitted on er
 
 void WsdlDocumentTest::testSendTelegram()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
@@ -903,7 +941,7 @@ void WsdlDocumentTest::testSendTelegram()
 
 void WsdlDocumentTest::testSendHugeTelegram()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     MyWsdlDocument service;
@@ -929,7 +967,7 @@ void WsdlDocumentTest::testSendHugeTelegram()
 
 void WsdlDocumentTest::testServerDelayedCall()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
     MyWsdlDocument service;
     service.setEndPoint(server->endPoint());
@@ -941,7 +979,7 @@ void WsdlDocumentTest::testServerDelayedCall()
 
 void WsdlDocumentTest::testSyncCallAfterServerDelayedCall()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
     MyWsdlDocument service;
     service.setEndPoint(server->endPoint());
@@ -957,7 +995,7 @@ void WsdlDocumentTest::testSyncCallAfterServerDelayedCall()
 
 void WsdlDocumentTest::testServerTwoDelayedCalls()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
     MyWsdlDocument service;
     service.setEndPoint(server->endPoint());
@@ -986,7 +1024,7 @@ void WsdlDocumentTest::testServerTwoDelayedCalls()
 // Same as testSequenceInResponse (thomas-bayer.wsdl), but as a server test, by calling DocServer on a different path
 void WsdlDocumentTest::testServerDifferentPath()
 {
-    DocServerThread serverThread;
+    TestServerThread<DocServer> serverThread;
     DocServer* server = serverThread.startThread();
 
     NamesServiceService serv;

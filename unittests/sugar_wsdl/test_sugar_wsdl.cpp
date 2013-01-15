@@ -38,8 +38,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -70,7 +70,7 @@ private Q_SLOTS:
               "<user_auth xsi:type=\"n1:user_auth\">"
                 "<user_name xsi:type=\"xsd:string\">user å</user_name>"
                 "<password xsi:type=\"xsd:string\">pass</password>"
-                "<version xsi:type=\"xsd:string\"></version>"
+                "<version xsi:type=\"xsd:string\" xsi:nil=\"true\"></version>"
               "</user_auth>"
               "<application_name xsi:type=\"xsd:string\">application</application_name>"
             "</n1:login>"

@@ -19,20 +19,30 @@
 ** clear to you.
 **
 **********************************************************************/
+#include "KDSoapClientInterface_p.h"
 #include "KDSoapNamespacePrefixes_p.h"
 #include "KDSoapNamespaceManager.h"
 
 void KDSoapNamespacePrefixes::writeStandardNamespaces(QXmlStreamWriter &writer, const SoapVersion soapVersion)
 {
+    /*if (version == KDSoapClientInterface::SOAP1_1) {
+        writeNamespace(writer, KDSoapNamespaceManager::soapEnvelope(), QLatin1String("soap"));
+        writeNamespace(writer, KDSoapNamespaceManager::soapEncoding(), QLatin1String("soap-enc"));
+    } else if (version == KDSoapClientInterface::SOAP1_2) {
+        writeNamespace(writer, KDSoapNamespaceManager::soapEnvelope200305(), QLatin1String("soap"));
+        writeNamespace(writer, KDSoapNamespaceManager::soapEncoding200305(), QLatin1String("soap-enc"));
+    }*/
+    
     writeNamespace(writer, KDSoapNamespaceManager::soapEnvelope(soapVersion), QLatin1String("soap"));
     writeNamespace(writer, KDSoapNamespaceManager::soapEncoding(soapVersion), QLatin1String("soap-enc"));
-    writeNamespace(writer, KDSoapNamespaceManager::xmlSchema1999(), QLatin1String("xsd"));
-    writeNamespace(writer, KDSoapNamespaceManager::xmlSchemaInstance1999(), QLatin1String("xsi"));
+
+    writeNamespace(writer, KDSoapNamespaceManager::xmlSchema2001(), QLatin1String("xsd"));
+    writeNamespace(writer, KDSoapNamespaceManager::xmlSchemaInstance2001(), QLatin1String("xsi"));
     writeNamespace(writer, QString::fromLatin1("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"), QLatin1String("wsse"));
     writeNamespace(writer, QString::fromLatin1("http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd"), QLatin1String("wsu"));
     writeNamespace(writer, QString::fromLatin1("http://www.w3.org/2005/08/addressing"), QLatin1String("wsa5"));
 
     // Also insert known variants
-    insert(KDSoapNamespaceManager::xmlSchema2001(), QString::fromLatin1("xsd"));
-    insert(KDSoapNamespaceManager::xmlSchemaInstance2001(), QString::fromLatin1("xsi"));
+    insert(KDSoapNamespaceManager::xmlSchema1999(), QString::fromLatin1("xsd"));
+    insert(KDSoapNamespaceManager::xmlSchemaInstance1999(), QString::fromLatin1("xsi"));
 }

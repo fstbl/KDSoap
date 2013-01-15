@@ -108,19 +108,16 @@ QStringList NSManager::uris() const
   return mMap.values();
 }
 
-QString NSManager::schemaPrefix() const
+QStringList NSManager::soapEncNamespaces()
 {
-  return prefix( QLatin1String("http://www.w3.org/2001/XMLSchema") );
+    return QStringList() << QLatin1String("http://schemas.xmlsoap.org/soap/encoding/")
+                         << QLatin1String("http://www.w3.org/2003/05/soap-encoding");
 }
 
-QString NSManager::schemaInstancePrefix() const
+QStringList NSManager::soapNamespaces()
 {
-  return prefix( QLatin1String("http://www.w3.org/2001/XMLSchema-instance") );
-}
-
-QString NSManager::soapEncPrefix() const
-{
-  return prefix( QLatin1String("http://schemas.xmlsoap.org/soap/encoding/") );
+    return QStringList() << QLatin1String("http://schemas.xmlsoap.org/wsdl/soap/")
+                         << QLatin1String("http://schemas.xmlsoap.org/wsdl/soap12/");
 }
 
 void NSManager::reset()

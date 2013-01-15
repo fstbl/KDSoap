@@ -37,8 +37,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -56,6 +56,12 @@ private Q_SLOTS:
             TNS__Login loginParams;
             sforce.login(loginParams);
             sforce.logout();
+
+            // Test for the describeLayout-anonymous-complex-type vs DescribeLayout-complex-type conflict
+            TNS__DescribeLayoutElement describeParams;
+            (void)describeParams.sObjectType();
+            TNS__DescribeLayoutResponse describeResponse;
+            (void)describeResponse.result().layouts().first().id();
         }
     }
 

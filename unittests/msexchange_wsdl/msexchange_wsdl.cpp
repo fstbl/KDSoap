@@ -38,8 +38,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -87,8 +87,8 @@ private Q_SLOTS:
                 "</soap:Header>"
                 "<soap:Body>"
                   "<n1:ResolveNames n1:ReturnFullContactData=\"true\" n1:SearchScope=\"ActiveDirectory\">"
-                  "<n1:ParentFolderIds><n2:FolderId xmlns:n2=\"http://schemas.microsoft.com/exchange/services/2006/types\" n2:Id=\"folderId\" n2:ChangeKey=\"\"/></n1:ParentFolderIds>"
-                  "<n1:UnresolvedEntry/>"
+                  "<n1:ParentFolderIds><n2:FolderId xmlns:n2=\"http://schemas.microsoft.com/exchange/services/2006/types\" n2:Id=\"folderId\" n2:ChangeKey=\"\" xsi:nil=\"true\"/></n1:ParentFolderIds>"
+                  "<n1:UnresolvedEntry xsi:nil=\"true\"/>"
                 "</n1:ResolveNames>"
                 "</soap:Body>" + xmlEnvEnd
             + '\n'; // added by QXmlStreamWriter::writeEndDocument

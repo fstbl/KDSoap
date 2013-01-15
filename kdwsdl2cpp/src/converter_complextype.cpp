@@ -4,8 +4,6 @@
 
 #include <QDebug>
 
-static const QString soapEncNs = QLatin1String("http://schemas.xmlsoap.org/soap/encoding/");
-
 using namespace KWSDL;
 
 void Converter::convertComplexType( const XSD::ComplexType *type )
@@ -14,7 +12,8 @@ void Converter::convertComplexType( const XSD::ComplexType *type )
     //if ( type->isEmpty() )
     //    return;
 
-    if ( type->nameSpace() == soapEncNs )
+    // Skip the Array types we added in Parser::init...
+    if ( NSManager::soapEncNamespaces().contains(type->nameSpace()) )
         return;
 
     const QString className( mTypeMap.localType( type->qualifiedName() ) );
@@ -194,7 +193,7 @@ void Converter::convertComplexType( const XSD::ComplexType *type )
     KODE::Function dtor( QLatin1Char('~') + upperlize( newClass.name() ) );
     newClass.addFunction( dtor );
 
-    mClasses.append( newClass );
+    mClasses.addClass( newClass );
 }
 
 static QString namespaceString(const QString& ns)

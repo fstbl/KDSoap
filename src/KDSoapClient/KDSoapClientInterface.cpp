@@ -23,6 +23,10 @@
 #include "KDSoapClientInterface_p.h"
 #include "KDSoapNamespaceManager.h"
 #include "KDSoapMessageWriter_p.h"
+#ifndef QT_NO_OPENSSL
+#include "KDSoapSslHandler.h"
+#endif
+#include <QSslConfiguration>
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QAuthenticator>
@@ -32,7 +36,7 @@
 #include <QtNetwork/QHttpMultiPart>
 
 KDSoapClientInterface::KDSoapClientInterface(const QString& endPoint, const QString& messageNamespace)
-    : d(new Private)
+    : d(new KDSoapClientInterfacePrivate)
 {
     d->m_endPoint = endPoint;
     d->m_messageNamespace = messageNamespace;
@@ -53,21 +57,31 @@ void KDSoapClientInterface::setSoapVersion(SoapVersion version)
 
 SoapVersion KDSoapClientInterface::soapVersion()
 {
-  return d->m_version;
+    return d->m_version;
 }
 
 
-KDSoapClientInterface::Private::Private()
+KDSoapClientInterfacePrivate::KDSoapClientInterfacePrivate()
     : m_authentication(),
-      m_style(RPCStyle),
+      m_style(KDSoapClientInterface::RPCStyle),
       m_ignoreSslErrors(false)
 {
+#ifndef QT_NO_OPENSSL
+    m_sslHandler = 0;
+#endif
     connect(&m_accessManager, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
             this, SLOT(_kd_slotAuthenticationRequired(QNetworkReply*,QAuthenticator*)));
     m_accessManager.cookieJar(); // create it in the right thread...
 }
 
-QNetworkRequest KDSoapClientInterface::Private::prepareRequest(const QString &method, const QString& action, const QString& boundary)
+KDSoapClientInterfacePrivate::~KDSoapClientInterfacePrivate()
+{
+#ifndef QT_NO_OPENSSL
+    delete m_sslHandler;
+#endif
+}
+
+QNetworkRequest KDSoapClientInterfacePrivate::prepareRequest(const QString &method, const QString& action, const QString& boundary)
 {
     QNetworkRequest request(QUrl(this->m_endPoint));
 
@@ -109,14 +123,20 @@ QNetworkRequest KDSoapClientInterface::Private::prepareRequest(const QString &me
     // when the response seems to reach a certain size threshold
     request.setRawHeader( "Accept-Encoding", "compress" );
 
+#ifndef QT_NO_OPENSSL
+    if (!m_sslConfiguration.isNull())
+        request.setSslConfiguration(m_sslConfiguration);
+#endif
+
     return request;
 }
 
-QBuffer* KDSoapClientInterface::Private::prepareRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers)
+QBuffer* KDSoapClientInterfacePrivate::prepareRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers)
 {
     KDSoapMessageWriter msgWriter;
     msgWriter.setMessageNamespace(m_messageNamespace);
-    const QByteArray data = msgWriter.messageToXml(message, (m_style == RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
+    msgWriter.setVersion(m_version);
+    const QByteArray data = msgWriter.messageToXml(message, (m_style == KDSoapClientInterface::RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
     QBuffer* buffer = new QBuffer;
     buffer->setData(data);
     buffer->open(QIODevice::ReadOnly);
@@ -124,7 +144,7 @@ QBuffer* KDSoapClientInterface::Private::prepareRequestBuffer(const QString& met
 }
 
 //Use mime parts iff the SOAP version is XOP.
-QHttpMultiPart* KDSoapClientInterface::Private::prepareMimeRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers)
+QHttpMultiPart* KDSoapClientInterfacePrivate::prepareMimeRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers)
 {
     QHttpMultiPart *mime = new QHttpMultiPart(QHttpMultiPart::RelatedType);
 
@@ -140,7 +160,7 @@ QHttpMultiPart* KDSoapClientInterface::Private::prepareMimeRequestBuffer(const Q
     //TODO: Catch base64 and use xop instead. B4152: WCF optimizes element information items that contain base64-encoded data and exceed 1024 bytes in length.
     KDSoapMessageWriter msgWriter;
     msgWriter.setMessageNamespace(m_messageNamespace);
-    const QByteArray data = msgWriter.messageToXml(message, (m_style == RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
+    const QByteArray data = msgWriter.messageToXml(message, (m_style == KDSoapClientInterface::RPCStyle) ? method : QString(), headers, m_persistentHeaders, m_version);
     soapPart.setBody(data);
 
     mime->append(soapPart);
@@ -197,7 +217,7 @@ void KDSoapClientInterface::callNoReply(const QString &method, const KDSoapMessa
     QObject::connect(reply, SIGNAL(finished()), reply, SLOT(deleteLater()));
 }
 
-void KDSoapClientInterface::Private::_kd_slotAuthenticationRequired(QNetworkReply* reply, QAuthenticator* authenticator)
+void KDSoapClientInterfacePrivate::_kd_slotAuthenticationRequired(QNetworkReply* reply, QAuthenticator* authenticator)
 {
     m_authentication.handleAuthenticationRequired(reply, authenticator);
 }
@@ -228,10 +248,16 @@ void KDSoapClientInterface::ignoreSslErrors()
     d->m_ignoreSslErrors = true;
 }
 
-void KDSoapClientInterface::Private::setupReply(QNetworkReply *reply)
+void KDSoapClientInterfacePrivate::setupReply(QNetworkReply *reply)
 {
     if (m_ignoreSslErrors) {
         QObject::connect(reply, SIGNAL(sslErrors(const QList<QSslError>&)), reply, SLOT(ignoreSslErrors()));
+    } else {
+#ifndef QT_NO_OPENSSL
+        if (m_sslHandler) {
+            QObject::connect(reply, SIGNAL(sslErrors(QList<QSslError>)), m_sslHandler, SLOT(slotSslErrors(QList<QSslError>)));
+        }
+#endif
     }
 }
 
@@ -271,5 +297,24 @@ void KDSoapClientInterface::setProxy(const QNetworkProxy &proxy)
 {
     d->m_accessManager.setProxy(proxy);
 }
+
+#ifndef QT_NO_OPENSSL
+QSslConfiguration KDSoapClientInterface::sslConfiguration() const
+{
+    return d->m_sslConfiguration;
+}
+
+void KDSoapClientInterface::setSslConfiguration(const QSslConfiguration &config)
+{
+    d->m_sslConfiguration = config;
+}
+
+KDSoapSslHandler* KDSoapClientInterface::sslHandler() const
+{
+    if (!d->m_sslHandler)
+        d->m_sslHandler = new KDSoapSslHandler;
+    return d->m_sslHandler;
+}
+#endif
 
 #include "moc_KDSoapClientInterface_p.cpp"

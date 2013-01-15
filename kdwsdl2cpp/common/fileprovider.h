@@ -26,9 +26,11 @@
 
 #include <kode_export.h>
 
+QT_BEGIN_NAMESPACE
 class QNetworkReply;
 class QSslError;
 class QUrl;
+QT_END_NAMESPACE
 
 class KXMLCOMMON_EXPORT FileProvider : QObject
 {

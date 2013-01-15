@@ -25,7 +25,10 @@
 #include "KDSoapServerGlobal.h"
 #include <KDSoapClient/KDSoapMessage.h>
 #include "KDSoapDelayedResponseHandle.h"
+
 #include <QtCore/QObject>
+#include <QIODevice>
+
 class KDSoapServerSocket;
 
 /**
@@ -199,7 +202,9 @@ private:
     Private* const d;
 };
 
+QT_BEGIN_NAMESPACE
 Q_DECLARE_INTERFACE(KDSoapServerObjectInterface,
                     "com.kdab.KDSoap.ServerObjectInterface/1.0")
+QT_END_NAMESPACE
 
 #endif // KDSOAPSERVEROBJECTINTERFACE_H

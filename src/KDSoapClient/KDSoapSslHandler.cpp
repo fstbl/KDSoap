@@ -19,32 +19,31 @@
 ** clear to you.
 **
 **********************************************************************/
-#ifndef KDSOAPNAMESPACEMANAGER_H
-#define KDSOAPNAMESPACEMANAGER_H
 
-#include "KDSoapGlobal.h"
-#include "KDSoapClientInterface.h"
-#include <QtCore/QString>
+#include <QNetworkReply>
 
-class KDSoapClientInterface;
+#ifndef QT_NO_OPENSSL
+#include "KDSoapSslHandler.h"
 
-/**
- * Repository of namespaces
- */
-class KDSOAP_EXPORT KDSoapNamespaceManager
+KDSoapSslHandler::KDSoapSslHandler(QObject *parent)
+    : QObject(parent)
 {
-public:
-    static QString xmlSchema1999();
-    static QString xmlSchema2001();
-    static QString xmlSchemaInstance1999();
-    static QString xmlSchemaInstance2001();
-    static QString soapEnvelope(const SoapVersion soapVersion);
-    static QString soapEncoding(const SoapVersion soapVersion);
-    static QString soapEnvelope200305();
-    static QString soapEncoding200305();
+}
 
-private: // TODO instanciate to handle custom namespaces per clientinterface
-    KDSoapNamespaceManager();
-};
+KDSoapSslHandler::~KDSoapSslHandler()
+{
+}
 
-#endif // KDSOAPNAMESPACEMANAGER_H
+void KDSoapSslHandler::ignoreSslErrors()
+{
+    Q_ASSERT(m_reply);
+    m_reply->ignoreSslErrors();
+}
+
+void KDSoapSslHandler::slotSslErrors(const QList<QSslError> &errors)
+{
+    m_reply = qobject_cast<QNetworkReply *>(sender());
+    Q_ASSERT(m_reply);
+    Q_EMIT sslErrors(this, errors);
+}
+#endif

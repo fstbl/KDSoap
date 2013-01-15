@@ -29,8 +29,10 @@
 #include "KDSoapServer.h"
 #include "KDSoapServerObjectInterface.h"
 #include "httpserver_p.h"
+
 #include <QtTest/QtTest>
 #include <QEventLoop>
+#include <QNetworkCookie>
 #include <QNetworkCookieJar>
 #include <QDebug>
 
@@ -41,8 +43,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -182,7 +184,10 @@ private Q_SLOTS:
         {
             KDSoapMessage ret = client.call(QLatin1String("getEmployeeCountry"), countryMessage());
             // Check what we sent
-            QVERIFY(xmlBufferCompare(server.receivedData(), expectedRequestXml));
+            QByteArray expectedRequestXml12 = expectedRequestXml;
+            expectedRequestXml12.replace("http://schemas.xmlsoap.org/soap/envelope/", "http://www.w3.org/2003/05/soap-envelope");
+            expectedRequestXml12.replace("http://schemas.xmlsoap.org/soap/encoding/", "http://www.w3.org/2003/05/soap-encoding");
+            QVERIFY(xmlBufferCompare(server.receivedData(), expectedRequestXml12));
             QVERIFY(!ret.isFault());
             QCOMPARE(server.header("Content-Type").constData(), "application/soap+xml;charset=utf-8;action=http://www.kdab.com/xml/MyWsdl/getEmployeeCountry");
             QCOMPARE(ret.arguments().child(QLatin1String("employeeCountry")).value().toString(), QString::fromLatin1("France"));

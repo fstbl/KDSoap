@@ -22,6 +22,7 @@
 #ifndef KDSOAPCLIENTINTERFACE_P_H
 #define KDSOAPCLIENTINTERFACE_P_H
 
+#include <QtNetwork/QSslConfiguration>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkCookieJar>
 #include <QtCore/QXmlStreamWriter>
@@ -29,15 +30,18 @@
 #include "KDSoapClientInterface.h"
 #include "KDSoapClientThread_p.h"
 #include "KDSoapAuthentication.h"
+QT_BEGIN_NAMESPACE
 class QBuffer;
+QT_END_NAMESPACE
 class KDSoapMessage;
 class KDSoapNamespacePrefixes;
 
-class KDSoapClientInterface::Private : public QObject
+class KDSoapClientInterfacePrivate : public QObject
 {
     Q_OBJECT
 public:
-    Private();
+    KDSoapClientInterfacePrivate();
+    ~KDSoapClientInterfacePrivate();
 
     // Warning: this accessManager is only used by asyncCall and callNoReply.
     // For blocking calls, the thread has its own accessManager.
@@ -48,9 +52,13 @@ public:
     KDSoapAuthentication m_authentication;
     QMap<QString, KDSoapMessage> m_persistentHeaders;
     SoapVersion m_version;
-    Style m_style;
+    KDSoapClientInterface::Style m_style;
     bool m_ignoreSslErrors;
     KDSoapHeaders m_lastResponseHeaders;
+#ifndef QT_NO_OPENSSL
+    QSslConfiguration m_sslConfiguration;
+#endif
+    KDSoapSslHandler* m_sslHandler;
 
     QNetworkRequest prepareRequest(const QString &method, const QString& action, const QString& boundary = QString());
     QBuffer* prepareRequestBuffer(const QString& method, const KDSoapMessage& message, const KDSoapHeaders& headers);

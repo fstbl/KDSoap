@@ -20,8 +20,6 @@
     Boston, MA 02110-1301, USA.
 */
 
-#include <QtCore/QStringList>
-
 #include "class.h"
 
 #include <QDebug>
@@ -462,6 +460,20 @@ QStringList KODE::ClassList::classNames() const
     for (; it != end(); ++it)
         names.append((*it).name());
     return names;
+}
+
+
+void KODE::ClassList::addClass(const Class& cl)
+{
+    const QString qn = cl.qualifiedName();
+    ClassList::iterator it = begin();
+    for (; it != end(); ++it) {
+        if ((*it).qualifiedName() == qn) {
+            qWarning() << "ERROR: Already having a class called" << qn;
+        }
+    }
+
+    *this += cl;
 }
 
 void KODE::Class::addDeclarationMacro(const QString &macro)

@@ -46,7 +46,9 @@ KDSoapServerSocket* KDSoapSocketList::handleIncomingConnection(int socketDescrip
 #ifndef QT_NO_OPENSSL
     if (m_server->features() & KDSoapServer::Ssl) {
         // We could call a virtual "m_server->setSslConfiguration(socket)" here,
-        // if we don't want to rely on everyone using QSslConfiguration::setDefaultConfiguration.
+        // if more control is needed (e.g. due to SNI)
+        if (!m_server->sslConfiguration().isNull())
+            socket->setSslConfiguration(m_server->sslConfiguration());
         socket->startServerEncryption();
     }
 #endif
@@ -79,7 +81,11 @@ void KDSoapSocketList::disconnectAll()
 
 int KDSoapSocketList::totalConnectionCount() const
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5,0,0)
+    return m_totalConnectionCount.loadAcquire();
+#else
     return m_totalConnectionCount;
+#endif
 }
 
 void KDSoapSocketList::resetTotalConnectionCount()

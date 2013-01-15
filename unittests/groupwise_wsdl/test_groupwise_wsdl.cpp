@@ -37,8 +37,8 @@ static const char* xmlEnvBegin =
         "<soap:Envelope"
         " xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
         " xmlns:soap-enc=\"http://schemas.xmlsoap.org/soap/encoding/\""
-        " xmlns:xsd=\"http://www.w3.org/1999/XMLSchema\""
-        " xmlns:xsi=\"http://www.w3.org/1999/XMLSchema-instance\""
+        " xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""
+        " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
         " soap:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"";
 static const char* xmlEnvEnd = "</soap:Envelope>";
 
@@ -53,10 +53,14 @@ private Q_SLOTS:
         // No runtime test yet, just checking that the methods got generated
         if (false) { // Don't contact localhost:8080 :-)
             GroupwiseService::GroupWiseBinding groupwise;
+            groupwise.setGwTraceHeader(true);
             METHODS__AcceptRequest acceptRequest;
             acceptRequest.setComment(QString::fromLatin1("Comment"));
             METHODS__AcceptResponse response = groupwise.acceptRequest(acceptRequest);
             (void)response.status();
+
+            GroupwiseService::GroupWiseEventsBinding groupwiseEvents;
+            groupwiseEvents.setGwTraceHeader(true);
         }
     }
 
