@@ -57,8 +57,9 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
     namespacePrefixes.writeStandardNamespaces(writer, soapVersion);
 
     const QString soapEnvelope = KDSoapNamespaceManager::soapEnvelope(soapVersion);
-    writer.writeAttribute(soapEnvelope, QLatin1String("encodingStyle"), KDSoapNamespaceManager::soapEncoding(soapVersion));
-    
+    //writer.writeAttribute(soapEnvelope, QLatin1String("encodingStyle"), KDSoapNamespaceManager::soapEncoding(soapVersion));
+    const QString soapEncoding = KDSoapNamespaceManager::soapEncoding(soapVersion);
+	
     /*QString soapEnvelope;
     QString soapEncoding;
     if (m_version == KDSoapClientInterface::SOAP1_1) {
@@ -67,10 +68,10 @@ QByteArray KDSoapMessageWriter::messageToXml(const KDSoapMessage& message, const
     } else if (m_version == KDSoapClientInterface::SOAP1_2) {
         soapEnvelope = KDSoapNamespaceManager::soapEnvelope200305();
         soapEncoding = KDSoapNamespaceManager::soapEncoding200305();
-    }
+    }*/
 
     writer.writeStartElement(soapEnvelope, QLatin1String("Envelope"));
-    writer.writeAttribute(soapEnvelope, QLatin1String("encodingStyle"), soapEncoding);*/
+    writer.writeAttribute(soapEnvelope, QLatin1String("encodingStyle"), soapEncoding);
 
     QString messageNamespace = m_messageNamespace;
     if (!message.namespaceUri().isEmpty() && messageNamespace != message.namespaceUri()) {
