@@ -122,6 +122,10 @@ void KDSoapPendingCall::Private::parseReply(const SoapVersion soapVersion)
     } else {
         data = reply->readAll();
     }
+
+    delete multiPart;
+    multiPart = NULL;
+
     if (doDebug) {
         qDebug() << data;
     }
